@@ -5,10 +5,10 @@
 <header><div><h1>TK 播放与收益</h1><div class="status" id="status">正在读取数据…</div></div><button id="refresh">刷新</button></header>
 <main>
   <div id="error" class="notice warning" role="alert"></div>
-  <section><h2>昨天发布的表现</h2><p class="muted">按视频 PID 统计；播放量是截至最近采集的数值，不冒充昨天结束时的数值。</p>
+  <section><h2>昨天发布的表现</h2><p class="muted">“昨天”按北京时间自然日；按视频 PID 统计，播放量是截至最近采集的数值。</p>
     <div class="grid" id="yesterdayMetrics"></div><div class="panel" id="yesterdayVideos"></div>
     <div class="panel" id="yesterdayHours"></div></section>
-  <section class="spaced"><h2>什么时间发更合适</h2><p class="muted">近 7 天、已经发布满 24 小时的视频；同一批视频分别按北京、美东、美西当地发布时间比较首日播放，美东和美西按当天夏令时换算。</p>
+  <section class="spaced"><h2>什么时间发更合适</h2><p class="muted">样本取近 7 个北京自然日内、已经发布满 24 小时的视频；同一批视频分别按北京、美东、美西当地发布时间比较首日播放，美东和美西按当天夏令时换算。</p>
     <div class="panel" id="posting"></div><div class="panel"><details><summary>按首次采到的标签对比</summary><div id="tags"></div></details></div>
     <details><summary>这个对比怎么算</summary><p class="muted" id="postingMethod"></p></details></section>
   <section class="spaced"><h2>正在跑的单条视频</h2><p class="muted">近 7 天、各号最新 15 条中的 ≥1000 播放视频；按手机排序，按发布时间从新到旧，隐藏后仍按 PID 保留上次记录。</p><div id="live"></div></section>
