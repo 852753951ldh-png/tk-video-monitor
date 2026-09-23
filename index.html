@@ -1,0 +1,14 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>TK 视频与收益看板</title><link rel="stylesheet" href="board.css"></head>
+<body><header><div><h1>TK 视频与收益看板</h1><div class="status" id="status">正在读取公开数据…</div></div><div class="actions"><button id="refresh">刷新页面</button></div></header>
+<main><div id="error" class="notice warning" role="alert"></div><div class="notice">公开只读快照：账号、播放量和人工核对的累计估算收益对任何拿到链接的人可见。采集在本地持续运行，网页数据按发布周期更新，并非逐秒直播。</div>
+<div class="tabs"><button data-period="yesterday" class="active">昨日详细分析</button><button data-period="week">本周总结</button></div>
+<div class="toolbar"><div><h2 id="periodTitle">昨日详细分析</h2><p class="muted" id="range"></p></div></div>
+<div class="grid" id="metrics"></div><div class="notice" id="method"></div>
+<div class="columns"><div class="panel"><h3 id="chartTitle"></h3><div id="chart" class="chart"></div><small>增长归入后一次采样所在时段；灰色代表缺少可比采样。</small></div><div class="panel"><h3>增长最快的时段</h3><div id="fastest"></div></div></div>
+<div class="panel" id="contribution"></div><div class="panel"><h3>账号表现</h3><div id="ranking"></div></div>
+<div class="panel"><details><summary>视频明细 · 按期间增长排序</summary><div id="videos"></div></details></div>
+<section class="spaced"><h2>实时视频 · 近7天 / 最新15条 / ≥1000</h2><p class="muted">按手机排序，展开后按发布时间从新到旧。#4、#18 保留测试，#20 已停用。暂时不可见的视频按 PID 保留最近一次观测。</p><div id="live"></div></section>
+<section class="spaced"><h2>收益机会 · 核对计划</h2><p class="muted">近 7 天单条视频达 1000 播放，但 Creator Rewards 加入状态未确认；播放量不代表可获得收益。</p><div class="panel" id="opportunity"></div></section>
+<section class="spaced"><h2>累计估算收益</h2><p class="muted">USD · 人工核对记录；不是实时收入或已结算金额。未更新时沿用上次核对金额。</p><div class="panel" id="rewards"></div></section>
+<div class="panel"><details><summary>采集健康</summary><div id="health"></div></details></div></main><script src="public.js"></script></body></html>
