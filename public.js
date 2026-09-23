@@ -21,7 +21,6 @@ function renderYesterday(data) {
   $('#yesterdayMetrics').innerHTML =
     card('昨日可比播放增长', N(data.yesterday.growth), '全账号、连续采样') +
     card('昨日增长最快时段', hours.length ? hours[0].label+'–'+String((Number(hours[0].label.slice(0,2))+1)%24).padStart(2,'0')+':00' : '无数据', hours.length ? '北京时间 · 增加 '+N(hours[0].growth)+' 播放' : '无连续采样') +
-    card('当前 ≥1000', N(at(1000)), '截至最新采集') +
     card('当前 ≥3500', N(at(3500)), '截至最新采集') +
     card('当前 ≥5000', N(at(5000)), '截至最新采集');
   const row = v => ['<span class="phone">#'+v.account_no+'</span> '+esc(v.username),
