@@ -18,7 +18,7 @@ function renderOther(){
  $('#live').innerHTML=board.accounts.map(a=>'<details class="panel"><summary><span class="phone">#'+a.account_no+'</span> '+esc(a.username)+' · '+a.videos.length+' 条达标视频</summary>'+table(['PID / 发布时间','播放量','约24小时变化','1000 / 3500 / 5000 首次检测'],a.videos.map(v=>['<a class="pid" href="'+esc(v.url)+'" target="_blank" rel="noopener">'+esc(v.video_id)+'</a><br><small>'+D(v.published_at)+'</small>',N(v.views)+'<br><small>'+esc(v.tracking_state)+'</small>',N(v.daily_delta)+(v.daily_percent==null?'':' / '+v.daily_percent+'%'),[1000,3500,5000].map(k=>D(v.thresholds[k])).join('<br>')]))+'</details>').join('');
  const a=data.accounts,queue=a.filter(x=>x.best_views>=1000&&x.program!=='joined').sort((x,y)=>(y.best_views||0)-(x.best_views||0));
  $('#opportunity').innerHTML=queue.length?table(['手机 / 账号','近7天单条最高播放','计划状态'],queue.map(x=>['#'+x.account_no+' '+esc(x.username),N(x.best_views),'<span class="badge bad">'+STATES[x.program]+'</span>'])):'<p class="muted">暂无待核对账号。</p>';
- $('#rewards').innerHTML=table(['手机 / 账号','累计收益（USD）','核对时间','计划状态'],a.map(x=>['<span class="phone">#'+x.account_no+'</span> '+esc(x.username)+(x.test?'<br><small>测试赛道</small>':''),money(x.amount),D(x.checked_at),'<span class="badge '+(x.program==='joined'?'good':'')+'">'+STATES[x.program]+'</span>']));
+ $('#rewards').innerHTML=table(['手机 / 账号','累计收益（USD）','核对时间'],a.map(x=>['<span class="phone">#'+x.account_no+'</span> '+esc(x.username)+(x.test?'<br><small>测试赛道</small>':''),money(x.amount),D(x.checked_at)]));
  $('#health').innerHTML=table(['手机 / 账号','最后采集成功'],a.map(x=>['#'+x.account_no+' '+esc(x.username),D(x.last_ok)]));
  $('#status').textContent='最近采集 '+D(data.latest_sample)+' · 公开快照 '+D(data.generated_at);
 }
