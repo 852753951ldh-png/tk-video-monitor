@@ -15,9 +15,12 @@ function card(label, value, note) {
 
 function renderYesterday(data) {
   const videos = data.yesterday.videos.filter(v => v.new).sort((a,b) => b.views - a.views);
+  const hours = [...data.yesterday.bins].sort((a,b) => b.growth - a.growth);
   const at = n => videos.filter(v => v.views >= n).length;
   $('#yesterdayMetrics').innerHTML =
     card('已采到的昨日新视频', N(videos.length), '按 PID 去重') +
+    card('昨日可比播放增长', N(data.yesterday.growth), '全账号、连续采样') +
+    card('昨日增长最快时段', hours.length ? hours[0].label+'–'+String((Number(hours[0].label.slice(0,2))+1)%24).padStart(2,'0')+':00' : '无数据', hours.length ? '增加 '+N(hours[0].growth)+' 播放' : '无连续采样') +
     card('当前 ≥1000', N(at(1000)), '截至最新采集') +
     card('当前 ≥3500', N(at(3500)), '截至最新采集') +
     card('当前 ≥5000', N(at(5000)), '截至最新采集');
@@ -25,6 +28,9 @@ function renderYesterday(data) {
     D(v.published_at), '<a class="pid" target="_blank" rel="noopener" href="'+esc(v.url)+'">'+esc(v.video_id)+'</a>', N(v.views)];
   $('#yesterdayVideos').innerHTML = '<h3>播放最高的昨日新视频</h3>' + table(['手机 / 账号','发布时间','PID','当前播放'], videos.slice(0,6).map(row)) +
     (videos.length > 6 ? '<details><summary>查看其余 '+(videos.length-6)+' 条</summary>'+table(['手机 / 账号','发布时间','PID','当前播放'],videos.slice(6).map(row))+'</details>' : '');
+  const hourRows = list => table(['昨日观看时段','播放净增长','可比采样段'],list.map(h=>[esc(h.label),N(h.growth),N(h.intervals)]));
+  $('#yesterdayHours').innerHTML = '<h3>昨天哪个时段涨得最快</h3><p class="muted">这是观看增长发生的时刻，不等于最佳发布时间。采集间隔过长的不计入；按全账号播放净增长排序。</p>' +
+    hourRows(hours.slice(0,5)) + (hours.length>5 ? '<details><summary>查看全部 24 小时</summary>'+hourRows([...hours].sort((a,b)=>a.start-b.start))+'</details>' : '');
 }
 
 function renderPosting(data) {
