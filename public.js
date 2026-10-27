@@ -88,9 +88,9 @@ function renderRevenue(data) {
   const accounts = data.accounts;
   const known = accounts.filter(a => a.amount != null);
   const total = known.reduce((n,a) => n + Number(a.amount), 0);
-  $('#revenueMetrics').innerHTML = card('已录入累计收益合计',USD(total),'覆盖 '+known.length+' / '+accounts.length+' 个在监控账号');
+  $('#revenueMetrics').innerHTML = card('已录入累计收益合计',known.length ? USD(total) : '未录入','覆盖 '+known.length+' / '+accounts.length+' 个本批账号');
   $('#rewards').innerHTML = table(['手机 / 账号','累计收益（USD）','最近核对'],accounts.map(a=>[
-    '<span class="phone">#'+a.account_no+'</span> '+esc(a.username),USD(a.amount),D(a.checked_at)]));
+    '<span class="phone">#'+a.account_no+'</span> '+esc(a.username),USD(a.amount),a.checked_at ? D(a.checked_at) : '未核对']));
 }
 
 function renderWeek(data) {
