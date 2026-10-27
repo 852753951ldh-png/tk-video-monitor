@@ -14,9 +14,33 @@ function card(label, value, note) {
   return '<div class="card"><small>' + esc(label) + '</small><strong>' + esc(value) + '</strong><small>' + esc(note) + '</small></div>';
 }
 
+function renderAccounts(data, board) {
+  const byId = new Map(board.accounts.map(a => [a.account_id, a]));
+  const accounts = data.accounts;
+  const end = Math.max(0, ...accounts.map(a => Number(a.trial_ends_at || 0)));
+  const reached = accounts.reduce((n, a) => n + (byId.get(a.account_id)?.videos.length || 0), 0);
+  const sampled = accounts.filter(a => a.last_ok && a.last_ok >= a.trial_started_at).length;
+  const active = accounts.filter(a => a.active).length;
+  $('#trialNote').textContent = end ? '本批观察到 '+D(end)+'（北京时间）；到期自动停采，历史结果继续保留。' : '按手机编号查看采集和单条播放。';
+  $('#batchMetrics').innerHTML = card('本批账号', N(accounts.length), '按手机编号排序') +
+    card('已采到数据', N(sampled)+' / '+N(accounts.length), '首次成功采集过的账号') +
+    card('单条 ≥1,000', N(reached), '按 PID 去重') +
+    card('仍在采集', N(active), '到期自动停采');
+  $('#accounts').innerHTML = accounts.map(a => {
+    const detail = byId.get(a.account_id);
+    const hits = detail?.videos.length || 0;
+    const stale = a.last_ok && data.generated_at - a.last_ok > 3600;
+    const state = !a.active ? '已结束' : a.fail_streak ? '采集失败 '+a.fail_streak+' 次' : stale ? '采集延迟' : '采集中';
+    const stateClass = !a.active ? 'neutral' : a.fail_streak || stale ? 'warn' : 'good';
+    const peak = a.best_views == null ? '—' : N(a.best_views);
+    return '<div class="account-row panel"><div class="account-name"><span class="phone">#'+a.account_no+'</span> <a href="https://www.tiktok.com/@'+encodeURIComponent(a.username)+'" target="_blank" rel="noopener">@'+esc(a.username)+'</a><span class="state '+stateClass+'">'+esc(state)+'</span></div>'+
+      '<div class="account-facts"><span>最高单条 <b>'+peak+'</b></span><span>≥1,000 <b>'+N(hits)+' 条</b></span><span>最近采集 <b>'+D(a.last_ok)+'</b></span></div></div>';
+  }).join('') || '<div class="empty">尚无本批账号数据</div>';
+}
+
 function renderYesterday(data) {
   const videos = data.yesterday.videos.filter(v => v.new).sort((a,b) => b.views - a.views);
-  const hours = [...data.yesterday.bins].sort((a,b) => b.growth - a.growth);
+  const hours = [...data.yesterday.bins].filter(h => h.intervals > 0).sort((a,b) => b.growth - a.growth);
   const at = n => videos.filter(v => v.views >= n).length;
   $('#yesterdayMetrics').innerHTML =
     card('昨日可比播放增长', N(data.yesterday.growth), '全账号、连续采样') +
@@ -52,11 +76,12 @@ function renderPosting(data) {
 
 function renderLive(board) {
   const accounts = board.accounts.filter(a => a.videos.length);
+  $('#liveNote').textContent = '近 '+board.lookback_days+' 天、各号最新 15 条中的单条 ≥1,000；按手机排序，按发布时间从新到旧。隐藏后仍按 PID 保留上次记录。';
   $('#live').innerHTML = accounts.length ? accounts.map(a => '<details class="panel"><summary><span class="phone">#'+a.account_no+'</span> '+esc(a.username)+' · '+a.videos.length+' 条 ≥1000</summary>' +
     table(['PID / 发布时间','当前播放','约24小时变化','达标首次检测'],a.videos.map(v=>[
       '<a class="pid" target="_blank" rel="noopener" href="'+esc(v.url)+'">'+esc(v.video_id)+'</a><br><small>'+D(v.published_at)+'</small>',
       N(v.views)+'<br><small>'+esc(v.tracking_state)+'</small>',N(v.daily_delta)+(v.daily_percent==null?'':' / '+v.daily_percent+'%'),
-      [1000,3500,5000].map(k=>k+': '+D(v.thresholds[k])).join('<br>')])) + '</details>').join('') : '<div class="empty">近7天暂未采到 ≥1000 的视频</div>';
+      [1000,3500,5000].map(k=>k+': '+D(v.thresholds[k])).join('<br>')])) + '</details>').join('') : '<div class="empty">这批账号尚未采到单条 ≥1,000 的视频；上方仍显示各号目前的最高播放和采集状态。</div>';
 }
 
 function renderRevenue(data) {
@@ -71,15 +96,16 @@ function renderRevenue(data) {
 function renderWeek(data) {
   const p = data.week;
   $('#week').innerHTML = '<div class="grid">'+card('本周可比播放净增长',N(p.growth),'按连续采样计算')+
-    card('本周发布',N(p.published),'按视频发布时间')+card('本周首次检测 ≥3500',N(p.hit3500),'按 PID 去重')+
+    card('本周首次检测 ≥1000',N(p.hit1000),'按 PID 去重')+card('本周首次检测 ≥3500',N(p.hit3500),'按 PID 去重')+
     card('本周首次检测 ≥5000',N(p.hit5000),'按 PID 去重')+'</div>'+
     table(['账号','可比播放净增长','发布数'],p.accounts.slice(0,8).map(a=>['#'+a.account_no+' '+esc(a.username),N(a.growth),N(a.published)]))+
     '<p class="muted">'+esc(data.method)+'</p>';
 }
 
 function renderHealth(data) {
-  $('#health').innerHTML = table(['手机 / 账号','最近采集成功'],data.accounts.map(a=>['#'+a.account_no+' '+esc(a.username),D(a.last_ok)]));
-  $('#status').textContent = '最近采集 '+D(data.latest_sample)+' · 看板更新 '+D(data.generated_at);
+  $('#health').innerHTML = table(['手机 / 账号','最近采集成功','连续失败'],data.accounts.map(a=>['#'+a.account_no+' '+esc(a.username),D(a.last_ok),N(a.fail_streak)]));
+  const age = Math.max(0, Date.now()/1000 - data.generated_at);
+  $('#status').textContent = '最近采集 '+D(data.latest_sample)+' · 看板更新 '+D(data.generated_at)+ (age > 3*3600 ? ' · 更新延迟，请稍后重试' : ' · 约每2小时更新');
 }
 
 async function load() {
@@ -87,7 +113,7 @@ async function load() {
     const [insights,board] = await Promise.all([fetch('data/insights.json',{cache:'no-store'}),fetch('data/board.json',{cache:'no-store'})]);
     if (!insights.ok || !board.ok) throw new Error('公开数据暂不可用');
     const [data,live] = await Promise.all([insights.json(),board.json()]);
-    renderYesterday(data); renderPosting(data); renderLive(live); renderRevenue(data); renderWeek(data); renderHealth(data);
+    renderAccounts(data,live); renderLive(live); renderYesterday(data); renderPosting(data); renderRevenue(data); renderWeek(data); renderHealth(data);
     $('#error').style.display = 'none';
   } catch (error) {
     $('#error').style.display = 'block'; $('#error').textContent = '数据读取失败：'+error.message;
@@ -96,3 +122,4 @@ async function load() {
 }
 $('#refresh').onclick = () => location.reload();
 load();
+setInterval(load, 10 * 60 * 1000);
