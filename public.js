@@ -36,13 +36,13 @@ function trialAccount(a) {
     a.candidate_reason ? '待淘汰' : '观察中';
   const avg = a.average_views == null ? '—' : N(a.average_views);
   const tierName = a.grade === 'prism' ? '单条 ≥1,000' : a.grade === 'gold' ? '单条 ≥600' :
-    a.grade === 'low' ? '平均 <200' : a.grade === 'normal' ? '观察中' : '待采样';
+    a.grade === 'low' ? '平均 <200' : a.grade === 'missing' ? '待采样' : '';
   const extended = a.trial_ends_at && a.trial_ends_at - a.trial_started_at >= 72*3600;
   const actions = !isLocalManager ? '' : '<div class="trial-actions">'+
     (a.decision !== 'promoted' ? '<button type="button" data-decision="promoted" data-account-id="'+a.account_id+'">晋升为留下来的号</button>' : '')+
     (!a.decision && !extended ? '<button type="button" data-decision="extend" data-account-id="'+a.account_id+'">再观察 1 天</button>' : '')+
     (a.decision !== 'eliminated' ? '<label class="trial-reason-label">淘汰原因 <select class="trial-reason-select" data-reason-for="'+a.account_id+'"><option value="">请选择原因</option><option value="low_views">播放低</option><option value="banned">被封禁</option><option value="other">其他</option></select></label><button class="danger-quiet" type="button" data-decision="eliminated" data-account-id="'+a.account_id+'">淘汰并停采</button>' : '')+'</div>';
-  return '<details class="trial-account '+a.grade+'"><summary><div class="trial-account-title"><span class="phone">#'+a.account_no+'</span><span class="trial-user">@'+esc(a.username)+'</span><span class="tier-badge">'+tierName+'</span><span class="trial-state">'+decision+'</span></div>'+
+  return '<details class="trial-account '+a.grade+'"><summary><div class="trial-account-title"><span class="phone">#'+a.account_no+'</span><span class="trial-user">@'+esc(a.username)+'</span>'+(tierName ? '<span class="tier-badge">'+tierName+'</span>' : '')+'<span class="trial-state">'+decision+'</span></div>'+
     '<div class="trial-summary"><span>平均 <b>'+avg+'</b></span><span>≥200 <b>'+a.at_least_200+'/'+a.sample_count+'</b></span><span>≥600 <b>'+a.at_least_600+'</b></span><span>≥1,000 <b>'+a.at_least_1000+'</b></span></div></summary>'+
     '<div class="trial-inside">'+(a.candidate_reason ? '<p class="trial-reason">'+esc(a.candidate_reason)+'；仅供判断，未自动淘汰。</p>' : '')+
     '<div class="trial-meta">'+esc(state)+' · 最近成功 '+D(a.last_ok)+' · '+(a.trial_ends_at ? '观察到 '+D(a.trial_ends_at)+(extended ? '（已延长）' : '') : '已晋升，持续监测')+'</div>'+
@@ -226,10 +226,13 @@ function renderHealth(data) {
 
 async function load() {
   try {
-    const [insights,board,trial] = await Promise.all([fetch('data/insights.json',{cache:'no-store'}),fetch('data/board.json',{cache:'no-store'}),fetch('data/trial.json',{cache:'no-store'})]);
-    if (!insights.ok || !board.ok || !trial.ok) throw new Error('看板数据暂不可用');
-    const [data,live,trialData] = await Promise.all([insights.json(),board.json(),trial.json()]);
-    renderTrial(trialData); renderLive(live); renderYesterday(data); renderPosting(data); renderRevenue(data); renderWeek(data); renderHealth(data);
+    const trial = await fetch('data/trial.json',{cache:'no-store'});
+    if (!trial.ok) throw new Error('看板数据暂不可用');
+    const trialData = await trial.json();
+    renderTrial(trialData);
+    const age = Math.max(0, Date.now()/1000 - trialData.generated_at);
+    $('#status').textContent = '看板更新 '+D(trialData.generated_at)+
+      (age > 3*3600 ? ' · 数据延迟' : isLocalManager ? ' · 本地数据' : ' · 约每2小时同步');
     $('#error').style.display = 'none';
   } catch (error) {
     $('#error').style.display = 'block'; $('#error').textContent = '数据读取失败：'+error.message;
