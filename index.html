@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="zh-CN">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>TK 新号观察</title><link rel="stylesheet" href="board.css?v=20261028e"></head>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>TK 新号观察</title><link rel="stylesheet" href="board.css?v=20261028g"></head>
 <body>
 <header><div><h1>TK 新号观察</h1><div class="status" id="status">正在读取数据…</div></div><button id="refresh">刷新</button></header>
 <main>
@@ -18,5 +18,16 @@
     <button id="trialMore" class="trial-more" type="button" hidden>显示更多账号</button>
     <details class="trial-eliminated"><summary id="trialHistoryTitle">淘汰记录</summary><div id="trialHistory"></div></details>
   </section>
-</main><script src="public.js?v=20261028e"></script>
+  <dialog id="eliminateDialog" class="eliminate-dialog" aria-labelledby="eliminateTitle" aria-describedby="eliminateHint">
+    <h2 id="eliminateTitle">淘汰账号</h2>
+    <p id="eliminateHint">请选择淘汰原因。采集不到不代表封号；“被封禁”只在你确认后记录。</p>
+    <fieldset class="eliminate-reasons"><legend>淘汰原因</legend>
+      <label><input type="radio" name="eliminateReason" value="low_views"><span>播放低</span></label>
+      <label><input type="radio" name="eliminateReason" value="banned"><span>已确认封禁</span></label>
+      <label><input type="radio" name="eliminateReason" value="other"><span>其他原因</span></label>
+    </fieldset>
+    <p id="eliminateError" class="error" role="alert" hidden></p>
+    <div class="eliminate-actions"><button type="button" id="cancelElimination">取消，继续观察</button><button type="button" id="confirmElimination" disabled>确认淘汰并停采</button></div>
+  </dialog>
+</main><script src="public.js?v=20261028g"></script>
 </body></html>

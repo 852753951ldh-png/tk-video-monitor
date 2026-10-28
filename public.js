@@ -33,7 +33,7 @@ function trialVideo(v) {
 function trialAccount(a) {
   const state = a.fail_streak ? '采集异常 '+a.fail_streak+' 次' : !a.active ? '已停采' : '采集中';
   const decision = a.decision === 'promoted' ? '已晋升' : a.decision === 'eliminated' ? '已淘汰' :
-    a.candidate_reason ? '待淘汰' : '观察中';
+    a.candidate_reason ? '待淘汰' : a.fail_streak ? '采集异常' : '观察中';
   const avg = a.average_views == null ? '—' : N(a.average_views);
   const tierName = a.grade === 'prism' ? '单条 ≥1,000' : a.grade === 'gold' ? '单条 ≥600' :
     a.grade === 'low' ? '平均 <200' : a.grade === 'missing' ? '待采样' : '';
@@ -41,7 +41,7 @@ function trialAccount(a) {
   const actions = !isLocalManager ? '' : '<div class="trial-actions">'+
     (a.decision !== 'promoted' ? '<button type="button" data-decision="promoted" data-account-id="'+a.account_id+'">晋升为留下来的号</button>' : '')+
     (!a.decision && !extended ? '<button type="button" data-decision="extend" data-account-id="'+a.account_id+'">再观察 1 天</button>' : '')+
-    (a.decision !== 'eliminated' ? '<label class="trial-reason-label">淘汰原因 <select class="trial-reason-select" data-reason-for="'+a.account_id+'"><option value="">请选择原因</option><option value="low_views">播放低</option><option value="banned">被封禁</option><option value="other">其他</option></select></label><button class="danger-quiet" type="button" data-decision="eliminated" data-account-id="'+a.account_id+'">淘汰并停采</button>' : '')+'</div>';
+    (a.decision !== 'eliminated' ? '<button class="danger-quiet" type="button" data-decision="eliminated" data-account-id="'+a.account_id+'">选择淘汰原因…</button>' : '')+'</div>';
   return '<details class="trial-account '+a.grade+'"><summary><div class="trial-account-title"><span class="phone">#'+a.account_no+'</span><span class="trial-user">@'+esc(a.username)+'</span>'+(tierName ? '<span class="tier-badge">'+tierName+'</span>' : '')+'<span class="trial-state">'+decision+'</span></div>'+
     '<div class="trial-summary"><span>平均 <b>'+avg+'</b></span><span>≥200 <b>'+a.at_least_200+'/'+a.sample_count+'</b></span><span>≥600 <b>'+a.at_least_600+'</b></span><span>≥1,000 <b>'+a.at_least_1000+'</b></span></div></summary>'+
     '<div class="trial-inside">'+(a.candidate_reason ? '<p class="trial-reason">'+esc(a.candidate_reason)+'；仅供判断，未自动淘汰。</p>' : '')+
@@ -97,16 +97,35 @@ function renderTrialHistory(history, query, phoneQuery) {
   ).join('') || '<div class="empty">暂无淘汰记录</div>';
 }
 
-async function decideTrial(accountId, decision) {
+const eliminationDialog = $('#eliminateDialog');
+let pendingEliminationId = null;
+let selectedEliminationReason = null;
+function openElimination(accountId) {
+  if (!isLocalManager) return;
+  const account = currentTrial?.accounts.find(x => x.account_id === accountId);
+  if (!account) return;
+  pendingEliminationId = accountId;
+  selectedEliminationReason = null;
+  $('#eliminateTitle').textContent = '淘汰 #'+account.account_no+' @'+account.username+'？';
+  $('#eliminateError').hidden = true;
+  $('#confirmElimination').disabled = true;
+  eliminationDialog.querySelectorAll('input[name="eliminateReason"]').forEach(input => { input.checked = false; });
+  eliminationDialog.showModal();
+}
+eliminationDialog.querySelectorAll('input[name="eliminateReason"]').forEach(input => input.addEventListener('change', () => {
+  selectedEliminationReason = input.value;
+  $('#confirmElimination').disabled = false;
+  $('#eliminateError').hidden = true;
+}));
+$('#cancelElimination').addEventListener('click', () => eliminationDialog.close());
+eliminationDialog.addEventListener('close', () => { pendingEliminationId = null; selectedEliminationReason = null; });
+
+async function decideTrial(accountId, decision, reason) {
   if (!isLocalManager) return;
   const a = currentTrial?.accounts.find(x => x.account_id === accountId);
   if (!a) return;
   const msg = $('#trialMessage');
-  const reason = decision === 'eliminated' ? document.querySelector('[data-reason-for="'+accountId+'"]')?.value : undefined;
-  if (decision === 'eliminated' && !reason) {
-    msg.hidden = false; msg.textContent = '请先选择淘汰原因：播放低、被封禁或其他。'; return;
-  }
-  if (decision === 'eliminated' && !confirm('淘汰 #'+a.account_no+' @'+a.username+' 并停止采集？历史视频不会删除。')) return;
+  if (decision === 'eliminated' && !reason) return false;
   msg.hidden = false; msg.textContent = '正在保存…';
   try {
     const response = await fetch('/api/trial/decision', {method:'POST',headers:{'Content-Type':'application/json'},
@@ -117,11 +136,30 @@ async function decideTrial(accountId, decision) {
       decision === 'extend' ? '已延长至 72 小时，公开看板正在同步。' : '已淘汰并停采，公开看板正在同步。';
     const next = await fetch('/data/trial.json',{cache:'no-store'});
     if (next.ok) renderTrial(await next.json());
-  } catch (error) { msg.textContent = '未保存：'+error.message; }
+    return true;
+  } catch (error) {
+    msg.textContent = '未保存：'+error.message;
+    if (decision === 'eliminated') {
+      $('#eliminateError').hidden = false;
+      $('#eliminateError').textContent = msg.textContent;
+    }
+    return false;
+  }
 }
 $('#trialContent').addEventListener('click', event => {
   const button = event.target.closest('[data-decision]');
-  if (button) decideTrial(Number(button.dataset.accountId), button.dataset.decision);
+  if (!button) return;
+  const id = Number(button.dataset.accountId);
+  if (button.dataset.decision === 'eliminated') openElimination(id);
+  else decideTrial(id, button.dataset.decision);
+});
+$('#confirmElimination').addEventListener('click', async () => {
+  if (!pendingEliminationId || !selectedEliminationReason) return;
+  const button = $('#confirmElimination');
+  button.disabled = true;
+  const saved = await decideTrial(pendingEliminationId, 'eliminated', selectedEliminationReason);
+  if (saved) eliminationDialog.close();
+  else button.disabled = false;
 });
 document.querySelectorAll('[data-trial-tab]').forEach(button => button.addEventListener('click', () => {
   trialTab = button.dataset.trialTab;
