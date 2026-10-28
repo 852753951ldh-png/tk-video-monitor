@@ -34,10 +34,12 @@ function trialAccount(a) {
   const decision = a.decision === 'promoted' ? '已晋升' : a.decision === 'eliminated' ? '已淘汰' :
     a.candidate_reason ? '待淘汰' : '观察中';
   const avg = a.average_views == null ? '—' : N(a.average_views);
+  const tierName = a.grade === 'prism' ? '棱彩 · 有 1,000' : a.grade === 'gold' ? '金色 · 有 600' :
+    a.grade === 'low' ? '低播放' : a.grade === 'normal' ? '普通' : '待采样';
   const actions = !isLocalManager ? '' : '<div class="trial-actions">'+
     (a.decision !== 'promoted' ? '<button type="button" data-decision="promoted" data-account-id="'+a.account_id+'">晋升为留下来的号</button>' : '')+
     (a.decision !== 'eliminated' ? '<button class="danger-quiet" type="button" data-decision="eliminated" data-account-id="'+a.account_id+'">淘汰并停采</button>' : '')+'</div>';
-  return '<details class="trial-account '+a.grade+'"><summary><div class="trial-account-title"><span class="phone">#'+a.account_no+'</span><span class="trial-user">@'+esc(a.username)+'</span><span class="trial-state">'+decision+'</span></div>'+
+  return '<details class="trial-account '+a.grade+'"><summary><div class="trial-account-title"><span class="phone">#'+a.account_no+'</span><span class="trial-user">@'+esc(a.username)+'</span><span class="tier-badge">'+tierName+'</span><span class="trial-state">'+decision+'</span></div>'+
     '<div class="trial-summary"><span>平均 <b>'+avg+'</b></span><span>≥200 <b>'+a.at_least_200+'/'+a.sample_count+'</b></span><span>≥600 <b>'+a.at_least_600+'</b></span><span>≥1,000 <b>'+a.at_least_1000+'</b></span></div></summary>'+
     '<div class="trial-inside">'+(a.candidate_reason ? '<p class="trial-reason">'+esc(a.candidate_reason)+'；仅供判断，未自动淘汰。</p>' : '')+
     '<div class="trial-meta">'+esc(state)+' · 最近成功 '+D(a.last_ok)+' · 试跑开始 '+D(a.trial_started_at)+'</div>'+
