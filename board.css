@@ -10,3 +10,29 @@
 .state.warn{background:#fff0e2;color:#9c4d0d}
 .state.neutral{background:#eef1f5;color:#68758a}
 @media(max-width:750px){.account-row{align-items:flex-start;flex-direction:column;gap:9px}.account-facts{gap:5px 15px}.account-facts span{white-space:nowrap}}
+
+/* Trial decisions use muted tier surfaces; labels and numbers carry the meaning. */
+.trial-tabs{display:flex;gap:8px;margin:18px 0;border-bottom:1px solid #dfe5ee;padding-bottom:8px}
+.trial-tab{min-height:44px;border-radius:10px;font-weight:700;padding:10px 14px}
+.trial-tab.active{background:#273954;color:#fff;border-color:#273954}
+.trial-group{margin:18px 0 24px}.trial-group h3{margin:0 0 10px;font-size:16px}.trial-group h3 small{font-weight:400;margin-left:6px}
+.trial-account{border:1px solid #dfe5ee;background:#fff;border-radius:14px;margin:8px 0;overflow:hidden}
+.trial-account>summary{padding:14px 16px;list-style:none;cursor:pointer;min-height:64px}
+.trial-account>summary::-webkit-details-marker{display:none}
+.trial-account.low{background:#fbf2f2;border-color:#ead3d3}
+.trial-account.gold{background:#f9f6ec;border-color:#e6dfca}
+.trial-account.prism{background:linear-gradient(110deg,#f3f5fb,#f7f3f9 55%,#f2f6f7);border-color:#d9dfed}
+.trial-account-title{display:flex;align-items:center;flex-wrap:wrap;gap:7px}.trial-user{font-weight:750;overflow-wrap:anywhere}.trial-state{margin-left:auto;color:#59677a;font-size:12px}
+.trial-summary{display:flex;flex-wrap:wrap;gap:8px 18px;color:#5d6b7e;font-size:13px;margin-top:11px;font-variant-numeric:tabular-nums}
+.trial-summary b{color:#1d2940;font-size:16px}.trial-inside{padding:0 16px 15px;border-top:1px solid #e6eaf0;background:#fff}
+.trial-meta,.trial-reason{font-size:12px;color:#637087;margin:11px 0 5px}.trial-reason{color:#873e42;font-weight:650}
+.trial-videos{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:11px 0}
+.trial-video{padding:11px 12px;border:1px solid #e5e9f0;border-radius:10px;background:#fff;min-width:0}
+.trial-video.low{background:#fbf2f2;border-color:#ecd9d9}.trial-video.gold{background:#faf7ee;border-color:#e8dfc9}
+.trial-video.prism{background:linear-gradient(120deg,#f3f5fb,#f8f4f9 58%,#f2f7f7);border-color:#dce1ed}
+.trial-video-top{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px}.trial-video-top strong{font-size:21px;font-variant-numeric:tabular-nums}
+.tier-label{font-size:11px;color:#536174;font-weight:700}.trial-video .pid{display:block;font-size:11px}.trial-video-meta{font-size:11px;color:#617087;margin-top:7px;line-height:1.55}
+.trial-actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:12px}.trial-actions button{min-height:44px;font-weight:650}.trial-actions .danger-quiet{color:#89464a;border-color:#dbbfc1}
+.trial-eliminated{border-top:1px solid #dfe5ee;margin:25px 0}.archive{border-top:1px solid #dfe5ee;padding-top:10px;margin-top:32px}.archive>summary,.trial-eliminated>summary{min-height:44px}
+button:focus-visible,summary:focus-visible,a:focus-visible{outline:3px solid #466ab7;outline-offset:2px}
+@media(max-width:750px){.trial-videos{grid-template-columns:1fr}.trial-summary{gap:6px 13px}.trial-account>summary{padding:12px}.trial-inside{padding:0 12px 13px}.trial-state{margin-left:0}}

@@ -14,6 +14,87 @@ function card(label, value, note) {
   return '<div class="card"><small>' + esc(label) + '</small><strong>' + esc(value) + '</strong><small>' + esc(note) + '</small></div>';
 }
 
+const isLocalManager = ['127.0.0.1', 'localhost'].includes(location.hostname);
+let trialTab = 'new';
+let currentTrial = null;
+function videoTone(views) {
+  return views >= 1000 ? ['prism', '突破 1,000'] : views >= 600 ? ['gold', '达到 600'] :
+    views >= 200 ? ['normal', '达到 200'] : ['low', '低于 200'];
+}
+function trialVideo(v) {
+  const [tone, label] = videoTone(v.views);
+  const fresh = v.last_seen === v.last_sample;
+  return '<div class="trial-video '+tone+'"><div class="trial-video-top"><span class="tier-label">'+label+'</span><strong>'+N(v.views)+'</strong></div>'+
+    '<a class="pid" target="_blank" rel="noopener" href="'+esc(v.url)+'">PID '+esc(v.pid)+'</a>'+
+    '<div class="trial-video-meta">发布 '+D(v.published_at)+' · 24 小时播放 '+(v.views_24h == null ? '待采样' : N(v.views_24h))+
+    (fresh ? '' : ' · 当前暂不可见或未更新')+'</div></div>';
+}
+function trialAccount(a) {
+  const state = a.fail_streak ? '采集异常 '+a.fail_streak+' 次' : !a.active ? '已停采' : '采集中';
+  const decision = a.decision === 'promoted' ? '已晋升' : a.decision === 'eliminated' ? '已淘汰' :
+    a.candidate_reason ? '待淘汰' : '观察中';
+  const avg = a.average_views == null ? '—' : N(a.average_views);
+  const actions = !isLocalManager ? '' : '<div class="trial-actions">'+
+    (a.decision !== 'promoted' ? '<button type="button" data-decision="promoted" data-account-id="'+a.account_id+'">晋升为留下来的号</button>' : '')+
+    (a.decision !== 'eliminated' ? '<button class="danger-quiet" type="button" data-decision="eliminated" data-account-id="'+a.account_id+'">淘汰并停采</button>' : '')+'</div>';
+  return '<details class="trial-account '+a.grade+'"><summary><div class="trial-account-title"><span class="phone">#'+a.account_no+'</span><span class="trial-user">@'+esc(a.username)+'</span><span class="trial-state">'+decision+'</span></div>'+
+    '<div class="trial-summary"><span>平均 <b>'+avg+'</b></span><span>≥200 <b>'+a.at_least_200+'/'+a.sample_count+'</b></span><span>≥600 <b>'+a.at_least_600+'</b></span><span>≥1,000 <b>'+a.at_least_1000+'</b></span></div></summary>'+
+    '<div class="trial-inside">'+(a.candidate_reason ? '<p class="trial-reason">'+esc(a.candidate_reason)+'；仅供判断，未自动淘汰。</p>' : '')+
+    '<div class="trial-meta">'+esc(state)+' · 最近成功 '+D(a.last_ok)+' · 试跑开始 '+D(a.trial_started_at)+'</div>'+
+    '<div class="trial-videos">'+(a.videos.length ? a.videos.map(trialVideo).join('') : '<div class="empty">尚未采到本次试跑的视频；这不是 0 播放。</div>')+'</div>'+actions+'</div></details>';
+}
+function renderTrial(data) {
+  currentTrial = data;
+  const accounts = data.accounts || [];
+  const promoted = accounts.filter(a => a.group === 'promoted');
+  const candidate = accounts.filter(a => a.group === 'candidate');
+  const observing = accounts.filter(a => a.group === 'trial');
+  const eliminated = accounts.filter(a => a.group === 'eliminated');
+  $('#newCount').textContent = '('+(candidate.length+observing.length)+')';
+  $('#promotedCount').textContent = '('+promoted.length+')';
+  document.querySelectorAll('[data-trial-tab]').forEach(b => {
+    const active = b.dataset.trialTab === trialTab;
+    b.classList.toggle('active', active);
+    b.setAttribute('aria-selected', String(active));
+  });
+  if (trialTab === 'promoted') {
+    $('#trialContent').innerHTML = promoted.length ? promoted.map(trialAccount).join('') :
+      '<div class="empty">还没有手动晋升的账号。你选中的号会出现在这里，试跑到期也不会自动停采。</div>';
+    return;
+  }
+  $('#trialContent').innerHTML =
+    (candidate.length ? '<div class="trial-group"><h3>待淘汰 <small>'+candidate.length+' 个 · 需要你确认</small></h3>'+candidate.map(trialAccount).join('')+'</div>' : '')+
+    '<div class="trial-group"><h3>继续观察 <small>'+observing.length+' 个 · 按手机编号</small></h3>'+
+    (observing.length ? observing.map(trialAccount).join('') : '<div class="empty">目前没有继续观察的新号</div>')+'</div>'+
+    (eliminated.length ? '<details class="trial-eliminated"><summary>已淘汰 · '+eliminated.length+' 个（历史保留）</summary>'+eliminated.map(trialAccount).join('')+'</details>' : '');
+}
+
+async function decideTrial(accountId, decision) {
+  if (!isLocalManager) return;
+  const a = currentTrial?.accounts.find(x => x.account_id === accountId);
+  if (!a) return;
+  if (decision === 'eliminated' && !confirm('淘汰 #'+a.account_no+' @'+a.username+' 并停止采集？历史视频不会删除。')) return;
+  const msg = $('#trialMessage');
+  msg.hidden = false; msg.textContent = '正在保存…';
+  try {
+    const response = await fetch('/api/trial/decision', {method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({account_id:accountId,decision})});
+    const result = await response.json();
+    if (!response.ok || !result.ok) throw new Error(result.error || '保存失败');
+    msg.textContent = decision === 'promoted' ? '已晋升，公开看板正在同步。' : '已淘汰并停采，公开看板正在同步。';
+    const next = await fetch('/data/trial.json',{cache:'no-store'});
+    if (next.ok) renderTrial(await next.json());
+  } catch (error) { msg.textContent = '未保存：'+error.message; }
+}
+$('#trialContent').addEventListener('click', event => {
+  const button = event.target.closest('[data-decision]');
+  if (button) decideTrial(Number(button.dataset.accountId), button.dataset.decision);
+});
+document.querySelectorAll('[data-trial-tab]').forEach(button => button.addEventListener('click', () => {
+  trialTab = button.dataset.trialTab;
+  if (currentTrial) renderTrial(currentTrial);
+}));
+
 function renderAccounts(data, board) {
   const byId = new Map(board.accounts.map(a => [a.account_id, a]));
   const accounts = data.accounts;
@@ -110,10 +191,10 @@ function renderHealth(data) {
 
 async function load() {
   try {
-    const [insights,board] = await Promise.all([fetch('data/insights.json',{cache:'no-store'}),fetch('data/board.json',{cache:'no-store'})]);
-    if (!insights.ok || !board.ok) throw new Error('公开数据暂不可用');
-    const [data,live] = await Promise.all([insights.json(),board.json()]);
-    renderAccounts(data,live); renderLive(live); renderYesterday(data); renderPosting(data); renderRevenue(data); renderWeek(data); renderHealth(data);
+    const [insights,board,trial] = await Promise.all([fetch('data/insights.json',{cache:'no-store'}),fetch('data/board.json',{cache:'no-store'}),fetch('data/trial.json',{cache:'no-store'})]);
+    if (!insights.ok || !board.ok || !trial.ok) throw new Error('看板数据暂不可用');
+    const [data,live,trialData] = await Promise.all([insights.json(),board.json(),trial.json()]);
+    renderTrial(trialData); renderLive(live); renderYesterday(data); renderPosting(data); renderRevenue(data); renderWeek(data); renderHealth(data);
     $('#error').style.display = 'none';
   } catch (error) {
     $('#error').style.display = 'block'; $('#error').textContent = '数据读取失败：'+error.message;
