@@ -36,13 +36,15 @@ function trialAccount(a) {
   const avg = a.average_views == null ? '—' : N(a.average_views);
   const tierName = a.grade === 'prism' ? '棱彩 · 有 1,000' : a.grade === 'gold' ? '金色 · 有 600' :
     a.grade === 'low' ? '低播放' : a.grade === 'normal' ? '普通' : '待采样';
+  const extended = a.trial_ends_at && a.trial_ends_at - a.trial_started_at >= 72*3600;
   const actions = !isLocalManager ? '' : '<div class="trial-actions">'+
     (a.decision !== 'promoted' ? '<button type="button" data-decision="promoted" data-account-id="'+a.account_id+'">晋升为留下来的号</button>' : '')+
+    (!a.decision && !extended ? '<button type="button" data-decision="extend" data-account-id="'+a.account_id+'">再观察 1 天</button>' : '')+
     (a.decision !== 'eliminated' ? '<button class="danger-quiet" type="button" data-decision="eliminated" data-account-id="'+a.account_id+'">淘汰并停采</button>' : '')+'</div>';
   return '<details class="trial-account '+a.grade+'"><summary><div class="trial-account-title"><span class="phone">#'+a.account_no+'</span><span class="trial-user">@'+esc(a.username)+'</span><span class="tier-badge">'+tierName+'</span><span class="trial-state">'+decision+'</span></div>'+
     '<div class="trial-summary"><span>平均 <b>'+avg+'</b></span><span>≥200 <b>'+a.at_least_200+'/'+a.sample_count+'</b></span><span>≥600 <b>'+a.at_least_600+'</b></span><span>≥1,000 <b>'+a.at_least_1000+'</b></span></div></summary>'+
     '<div class="trial-inside">'+(a.candidate_reason ? '<p class="trial-reason">'+esc(a.candidate_reason)+'；仅供判断，未自动淘汰。</p>' : '')+
-    '<div class="trial-meta">'+esc(state)+' · 最近成功 '+D(a.last_ok)+' · 试跑开始 '+D(a.trial_started_at)+'</div>'+
+    '<div class="trial-meta">'+esc(state)+' · 最近成功 '+D(a.last_ok)+' · '+(a.trial_ends_at ? '观察到 '+D(a.trial_ends_at)+(extended ? '（已延长）' : '') : '已晋升，持续监测')+'</div>'+
     '<div class="trial-videos">'+(a.videos.length ? a.videos.map(trialVideo).join('') : '<div class="empty">尚未采到本次试跑的视频；这不是 0 播放。</div>')+'</div>'+actions+'</div></details>';
 }
 function renderTrial(data) {
@@ -83,7 +85,8 @@ async function decideTrial(accountId, decision) {
       body:JSON.stringify({account_id:accountId,decision})});
     const result = await response.json();
     if (!response.ok || !result.ok) throw new Error(result.error || '保存失败');
-    msg.textContent = decision === 'promoted' ? '已晋升，公开看板正在同步。' : '已淘汰并停采，公开看板正在同步。';
+    msg.textContent = decision === 'promoted' ? '已晋升，公开看板正在同步。' :
+      decision === 'extend' ? '已延长至 72 小时，公开看板正在同步。' : '已淘汰并停采，公开看板正在同步。';
     const next = await fetch('/data/trial.json',{cache:'no-store'});
     if (next.ok) renderTrial(await next.json());
   } catch (error) { msg.textContent = '未保存：'+error.message; }
