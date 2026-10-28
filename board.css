@@ -21,22 +21,26 @@
 .trial-account>summary::-webkit-details-marker{display:none}
 .trial-account.low{background:#fbf2f2;border-color:#ead3d3}
 .trial-account.gold{background:linear-gradient(120deg,#fbf9f1,#f7f1df);border-color:#d8c798;box-shadow:inset 0 0 0 1px #fffaf0}
-.trial-account.prism{border:1px solid transparent;background:linear-gradient(110deg,#f1f4fa,#f8f1f8 55%,#eef6f4) padding-box,linear-gradient(115deg,#9caed0,#c6aacd 52%,#9dbfc0) border-box;box-shadow:inset 0 0 0 1px #ffffffa8}
+.trial-account.prism{border:2px solid transparent;background:linear-gradient(110deg,#e7eeff,#f7e6f4 55%,#e0f3ef) padding-box,linear-gradient(115deg,#6489db,#b46dcb 52%,#5aab9d) border-box;box-shadow:inset 0 0 0 1px #ffffffa8}
 .trial-account-title{display:flex;align-items:center;flex-wrap:wrap;gap:7px}.trial-user{font-weight:750;overflow-wrap:anywhere}.trial-state{margin-left:auto;color:#59677a;font-size:12px}
 .tier-badge{font-size:11px;font-weight:700;color:#566478;background:#f0f2f6;border:1px solid #e0e4eb;border-radius:6px;padding:2px 6px}
 .trial-account.low .tier-badge{color:#874a4f;background:#f8e9e9;border-color:#ead4d4}
 .trial-account.gold .tier-badge{color:#755e2c;background:#f4ebcf;border-color:#decca0}
-.trial-account.prism .tier-badge{color:#5c587b;background:#ece9f5;border-color:#cfc9e1}
+.trial-account.prism .tier-badge{color:#553f81;background:#e7def5;border-color:#bda6d9}
 .trial-summary{display:flex;flex-wrap:wrap;gap:8px 18px;color:#5d6b7e;font-size:13px;margin-top:11px;font-variant-numeric:tabular-nums}
 .trial-summary b{color:#1d2940;font-size:16px}.trial-inside{padding:0 16px 15px;border-top:1px solid #e6eaf0;background:#fff}
 .trial-meta,.trial-reason{font-size:12px;color:#637087;margin:11px 0 5px}.trial-reason{color:#873e42;font-weight:650}
 .trial-videos{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:11px 0}
 .trial-video{padding:11px 12px;border:1px solid #e5e9f0;border-radius:10px;background:#fff;min-width:0}
 .trial-video.low{background:#fbf2f2;border-color:#ecd9d9}.trial-video.gold{background:linear-gradient(120deg,#fcfaf4,#f6edd4);border-color:#d8c28d}
-.trial-video.prism{border:1px solid transparent;background:linear-gradient(120deg,#f0f4fa,#f9f0f7 58%,#edf6f4) padding-box,linear-gradient(115deg,#9caed0,#c6aacd 52%,#9dbfc0) border-box}
+.trial-video.prism{border:2px solid transparent;background:linear-gradient(120deg,#e7eeff,#f7e4f2 58%,#ddf3ee) padding-box,linear-gradient(115deg,#6489db,#b46dcb 52%,#5aab9d) border-box}
 .trial-video-top{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px}.trial-video-top strong{font-size:21px;font-variant-numeric:tabular-nums}
 .tier-label{font-size:11px;color:#536174;font-weight:700}.trial-video .pid{display:block;font-size:11px}.trial-video-meta{font-size:11px;color:#617087;margin-top:7px;line-height:1.55}
 .trial-actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:12px}.trial-actions button{min-height:44px;font-weight:650}.trial-actions .danger-quiet{color:#89464a;border-color:#dbbfc1}
+.trial-reason-label{display:flex;align-items:center;gap:8px;color:#59677a;font-size:12px}.trial-reason-select{min-height:44px;max-width:150px}
+.trial-search-label{display:block;font-size:12px;font-weight:650;color:#59677a;margin:4px 0 6px}.trial-search{width:min(100%,400px);min-height:44px;margin-bottom:10px}
+.trial-more{display:block;margin:10px auto 20px;min-height:44px}.trial-more[hidden]{display:none}
+.history-phone{border-bottom:1px solid #e6eaf0}.history-phone>summary{min-height:44px}.history-row{display:flex;align-items:center;flex-wrap:wrap;gap:8px 15px;padding:10px 8px;border-top:1px solid #edf0f5;font-size:12px;color:#536174}.history-row span:first-child{font-weight:700;color:#253452;overflow-wrap:anywhere}.history-row time{margin-left:auto}
 .trial-eliminated{border-top:1px solid #dfe5ee;margin:25px 0}.archive{border-top:1px solid #dfe5ee;padding-top:10px;margin-top:32px}.archive>summary,.trial-eliminated>summary{min-height:44px}
 button:focus-visible,summary:focus-visible,a:focus-visible{outline:3px solid #466ab7;outline-offset:2px}
 @media(max-width:750px){.trial-videos{grid-template-columns:1fr}.trial-summary{gap:6px 13px}.trial-account>summary{padding:12px}.trial-inside{padding:0 12px 13px}.trial-state{margin-left:0}}

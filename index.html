@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="zh-CN">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>TK 新号观察</title><link rel="stylesheet" href="board.css?v=20261028b"></head>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>TK 新号观察</title><link rel="stylesheet" href="board.css?v=20261028c"></head>
 <body>
 <header><div><h1>TK 新号观察</h1><div class="status" id="status">正在读取数据…</div></div><button id="refresh">刷新</button></header>
 <main>
@@ -8,11 +8,15 @@
   <section id="trial" aria-labelledby="trialTitle"><h2 id="trialTitle">新号试跑</h2>
     <p class="muted">按手机编号看前 3—9 条视频。平均播放为主，单条 600／1,000 单独标记；采集失败不算零播放。</p>
     <div class="trial-tabs" role="tablist" aria-label="账号阶段">
-      <button class="trial-tab active" type="button" role="tab" aria-selected="true" data-trial-tab="new">新号试跑 <span id="newCount"></span></button>
-      <button class="trial-tab" type="button" role="tab" aria-selected="false" data-trial-tab="promoted">留下来的号 <span id="promotedCount"></span></button>
+      <button class="trial-tab active" type="button" role="tab" aria-selected="true" data-trial-tab="new">新号区 <span id="newCount"></span></button>
+      <button class="trial-tab" type="button" role="tab" aria-selected="false" data-trial-tab="promoted">入围号 <span id="promotedCount"></span></button>
     </div>
+    <label class="trial-search-label" for="trialSearch">查找手机或账号</label>
+    <input id="trialSearch" class="trial-search" type="search" placeholder="例如 8 或 @账号" autocomplete="off">
     <div id="trialMessage" class="notice" role="status" hidden></div>
     <div id="trialContent"></div>
+    <button id="trialMore" class="trial-more" type="button" hidden>显示更多账号</button>
+    <details class="trial-eliminated"><summary id="trialHistoryTitle">淘汰记录</summary><div id="trialHistory"></div></details>
   </section>
   <details class="archive spaced"><summary>历史分析与收益</summary>
   <section class="spaced"><h2>突破 1,000 的视频</h2><p class="muted" id="liveNote">按手机排序，按发布时间从新到旧；视频靠 PID 区分。</p><div id="live"></div></section>
@@ -26,5 +30,5 @@
   <section class="spaced"><details><summary>本周总结与账号对比</summary><div id="week"></div></details></section>
   </details>
   <details><summary>采集状态</summary><div class="panel" id="health"></div></details>
-</main><script src="public.js?v=20261028b"></script>
+</main><script src="public.js?v=20261028c"></script>
 </body></html>

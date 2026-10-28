@@ -17,6 +17,7 @@ function card(label, value, note) {
 const isLocalManager = ['127.0.0.1', 'localhost'].includes(location.hostname);
 let trialTab = 'new';
 let currentTrial = null;
+let trialLimit = 20;
 function videoTone(views) {
   return views >= 1000 ? ['prism', '突破 1,000'] : views >= 600 ? ['gold', '达到 600'] :
     views >= 200 ? ['normal', '达到 200'] : ['low', '低于 200'];
@@ -34,13 +35,13 @@ function trialAccount(a) {
   const decision = a.decision === 'promoted' ? '已晋升' : a.decision === 'eliminated' ? '已淘汰' :
     a.candidate_reason ? '待淘汰' : '观察中';
   const avg = a.average_views == null ? '—' : N(a.average_views);
-  const tierName = a.grade === 'prism' ? '棱彩 · 有 1,000' : a.grade === 'gold' ? '金色 · 有 600' :
-    a.grade === 'low' ? '低播放' : a.grade === 'normal' ? '普通' : '待采样';
+  const tierName = a.grade === 'prism' ? '单条 ≥1,000' : a.grade === 'gold' ? '单条 ≥600' :
+    a.grade === 'low' ? '平均 <200' : a.grade === 'normal' ? '观察中' : '待采样';
   const extended = a.trial_ends_at && a.trial_ends_at - a.trial_started_at >= 72*3600;
   const actions = !isLocalManager ? '' : '<div class="trial-actions">'+
     (a.decision !== 'promoted' ? '<button type="button" data-decision="promoted" data-account-id="'+a.account_id+'">晋升为留下来的号</button>' : '')+
     (!a.decision && !extended ? '<button type="button" data-decision="extend" data-account-id="'+a.account_id+'">再观察 1 天</button>' : '')+
-    (a.decision !== 'eliminated' ? '<button class="danger-quiet" type="button" data-decision="eliminated" data-account-id="'+a.account_id+'">淘汰并停采</button>' : '')+'</div>';
+    (a.decision !== 'eliminated' ? '<label class="trial-reason-label">淘汰原因 <select class="trial-reason-select" data-reason-for="'+a.account_id+'"><option value="">请选择原因</option><option value="low_views">播放低</option><option value="banned">被封禁</option><option value="other">其他</option></select></label><button class="danger-quiet" type="button" data-decision="eliminated" data-account-id="'+a.account_id+'">淘汰并停采</button>' : '')+'</div>';
   return '<details class="trial-account '+a.grade+'"><summary><div class="trial-account-title"><span class="phone">#'+a.account_no+'</span><span class="trial-user">@'+esc(a.username)+'</span><span class="tier-badge">'+tierName+'</span><span class="trial-state">'+decision+'</span></div>'+
     '<div class="trial-summary"><span>平均 <b>'+avg+'</b></span><span>≥200 <b>'+a.at_least_200+'/'+a.sample_count+'</b></span><span>≥600 <b>'+a.at_least_600+'</b></span><span>≥1,000 <b>'+a.at_least_1000+'</b></span></div></summary>'+
     '<div class="trial-inside">'+(a.candidate_reason ? '<p class="trial-reason">'+esc(a.candidate_reason)+'；仅供判断，未自动淘汰。</p>' : '')+
@@ -50,39 +51,65 @@ function trialAccount(a) {
 function renderTrial(data) {
   currentTrial = data;
   const accounts = data.accounts || [];
-  const promoted = accounts.filter(a => a.group === 'promoted');
-  const candidate = accounts.filter(a => a.group === 'candidate');
-  const observing = accounts.filter(a => a.group === 'trial');
-  const eliminated = accounts.filter(a => a.group === 'eliminated');
-  $('#newCount').textContent = '('+(candidate.length+observing.length)+')';
-  $('#promotedCount').textContent = '('+promoted.length+')';
+  const query = $('#trialSearch').value.trim().toLowerCase().replace(/^@/,'');
+  const matches = a => !query || String(a.account_no) === query || a.username.toLowerCase().includes(query);
+  const promotedAll = accounts.filter(a => a.group === 'promoted');
+  const candidateAll = accounts.filter(a => a.group === 'candidate');
+  const observingAll = accounts.filter(a => a.group === 'trial');
+  const promoted = promotedAll.filter(matches);
+  const candidate = candidateAll.filter(matches);
+  const observing = observingAll.filter(matches);
+  $('#newCount').textContent = '('+(candidateAll.length+observingAll.length)+')';
+  $('#promotedCount').textContent = '('+promotedAll.length+')';
   document.querySelectorAll('[data-trial-tab]').forEach(b => {
     const active = b.dataset.trialTab === trialTab;
     b.classList.toggle('active', active);
     b.setAttribute('aria-selected', String(active));
   });
   if (trialTab === 'promoted') {
-    $('#trialContent').innerHTML = promoted.length ? promoted.map(trialAccount).join('') :
-      '<div class="empty">还没有手动晋升的账号。你选中的号会出现在这里，试跑到期也不会自动停采。</div>';
+    $('#trialContent').innerHTML = promoted.length ? promoted.slice(0,trialLimit).map(trialAccount).join('') :
+      '<div class="empty">'+(query ? '没有匹配的入围号。' : '还没有手动晋升的账号。')+'</div>';
+    $('#trialMore').hidden = promoted.length <= trialLimit;
+    renderTrialHistory(data.elimination_history || [], query);
     return;
   }
   $('#trialContent').innerHTML =
     (candidate.length ? '<div class="trial-group"><h3>待淘汰 <small>'+candidate.length+' 个 · 需要你确认</small></h3>'+candidate.map(trialAccount).join('')+'</div>' : '')+
     '<div class="trial-group"><h3>继续观察 <small>'+observing.length+' 个 · 按手机编号</small></h3>'+
-    (observing.length ? observing.map(trialAccount).join('') : '<div class="empty">目前没有继续观察的新号</div>')+'</div>'+
-    (eliminated.length ? '<details class="trial-eliminated"><summary>已淘汰 · '+eliminated.length+' 个（历史保留）</summary>'+eliminated.map(trialAccount).join('')+'</details>' : '');
+    (observing.length ? observing.slice(0,trialLimit).map(trialAccount).join('') : '<div class="empty">'+(query ? '没有匹配的新号。' : '目前没有继续观察的新号')+'</div>')+'</div>';
+  $('#trialMore').hidden = observing.length <= trialLimit;
+  renderTrialHistory(data.elimination_history || [], query);
+}
+
+function renderTrialHistory(history, query) {
+  $('#trialHistoryTitle').textContent = '淘汰记录 · '+history.length+' 次（历史账号保留）';
+  const matched = history.filter(h => !query || String(h.account_no) === query || h.username.toLowerCase().includes(query));
+  const phones = new Map();
+  matched.forEach(h => {
+    if (!phones.has(h.account_no)) phones.set(h.account_no, []);
+    phones.get(h.account_no).push(h);
+  });
+  const reason = {banned:'被封禁',low_views:'播放低',other:'其他'};
+  $('#trialHistory').innerHTML = [...phones.entries()].sort((a,b)=>a[0]-b[0]).map(([phone,items]) =>
+    '<details class="history-phone"><summary><span class="phone">#'+phone+'</span> '+items.length+' 次淘汰</summary>'+
+    items.map(h=>'<div class="history-row"><span>@'+esc(h.username)+'</span><span>已淘汰 · '+(reason[h.reason] || '其他')+'</span><time>'+D(h.decided_at)+'</time></div>').join('')+'</details>'
+  ).join('') || '<div class="empty">暂无淘汰记录</div>';
 }
 
 async function decideTrial(accountId, decision) {
   if (!isLocalManager) return;
   const a = currentTrial?.accounts.find(x => x.account_id === accountId);
   if (!a) return;
-  if (decision === 'eliminated' && !confirm('淘汰 #'+a.account_no+' @'+a.username+' 并停止采集？历史视频不会删除。')) return;
   const msg = $('#trialMessage');
+  const reason = decision === 'eliminated' ? document.querySelector('[data-reason-for="'+accountId+'"]')?.value : undefined;
+  if (decision === 'eliminated' && !reason) {
+    msg.hidden = false; msg.textContent = '请先选择淘汰原因：播放低、被封禁或其他。'; return;
+  }
+  if (decision === 'eliminated' && !confirm('淘汰 #'+a.account_no+' @'+a.username+' 并停止采集？历史视频不会删除。')) return;
   msg.hidden = false; msg.textContent = '正在保存…';
   try {
     const response = await fetch('/api/trial/decision', {method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({account_id:accountId,decision})});
+      body:JSON.stringify({account_id:accountId,decision,reason})});
     const result = await response.json();
     if (!response.ok || !result.ok) throw new Error(result.error || '保存失败');
     msg.textContent = decision === 'promoted' ? '已晋升，公开看板正在同步。' :
@@ -97,8 +124,11 @@ $('#trialContent').addEventListener('click', event => {
 });
 document.querySelectorAll('[data-trial-tab]').forEach(button => button.addEventListener('click', () => {
   trialTab = button.dataset.trialTab;
+  trialLimit = 20;
   if (currentTrial) renderTrial(currentTrial);
 }));
+$('#trialSearch').addEventListener('input', () => { trialLimit = 20; if (currentTrial) renderTrial(currentTrial); });
+$('#trialMore').addEventListener('click', () => { trialLimit += 20; if (currentTrial) renderTrial(currentTrial); });
 
 function renderAccounts(data, board) {
   const byId = new Map(board.accounts.map(a => [a.account_id, a]));
