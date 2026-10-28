@@ -52,7 +52,8 @@ function renderTrial(data) {
   currentTrial = data;
   const accounts = data.accounts || [];
   const query = $('#trialSearch').value.trim().toLowerCase().replace(/^@/,'');
-  const matches = a => !query || String(a.account_no) === query || a.username.toLowerCase().includes(query);
+  const phoneQuery = /^#?\d+$/.test(query) ? query.replace(/^#/,'') : null;
+  const matches = a => !query || (phoneQuery ? String(a.account_no) === phoneQuery : a.username.toLowerCase().includes(query));
   const promotedAll = accounts.filter(a => a.group === 'promoted');
   const candidateAll = accounts.filter(a => a.group === 'candidate');
   const observingAll = accounts.filter(a => a.group === 'trial');
@@ -70,7 +71,7 @@ function renderTrial(data) {
     $('#trialContent').innerHTML = promoted.length ? promoted.slice(0,trialLimit).map(trialAccount).join('') :
       '<div class="empty">'+(query ? '没有匹配的入围号。' : '还没有手动晋升的账号。')+'</div>';
     $('#trialMore').hidden = promoted.length <= trialLimit;
-    renderTrialHistory(data.elimination_history || [], query);
+    renderTrialHistory(data.elimination_history || [], query, phoneQuery);
     return;
   }
   $('#trialContent').innerHTML =
@@ -78,12 +79,12 @@ function renderTrial(data) {
     '<div class="trial-group"><h3>继续观察 <small>'+observing.length+' 个 · 按手机编号</small></h3>'+
     (observing.length ? observing.slice(0,trialLimit).map(trialAccount).join('') : '<div class="empty">'+(query ? '没有匹配的新号。' : '目前没有继续观察的新号')+'</div>')+'</div>';
   $('#trialMore').hidden = observing.length <= trialLimit;
-  renderTrialHistory(data.elimination_history || [], query);
+  renderTrialHistory(data.elimination_history || [], query, phoneQuery);
 }
 
-function renderTrialHistory(history, query) {
+function renderTrialHistory(history, query, phoneQuery) {
   $('#trialHistoryTitle').textContent = '淘汰记录 · '+history.length+' 次（历史账号保留）';
-  const matched = history.filter(h => !query || String(h.account_no) === query || h.username.toLowerCase().includes(query));
+  const matched = history.filter(h => !query || (phoneQuery ? String(h.account_no) === phoneQuery : h.username.toLowerCase().includes(query)));
   const phones = new Map();
   matched.forEach(h => {
     if (!phones.has(h.account_no)) phones.set(h.account_no, []);
