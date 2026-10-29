@@ -18,7 +18,21 @@ const isLocalManager = ['127.0.0.1', 'localhost'].includes(location.hostname);
 let trialTab = 'new';
 let currentTrial = null;
 let trialLimit = 20;
+const pendingDecisions = new Map();
 const trialStartDate = seconds => new Date(seconds * 1000).toLocaleDateString('zh-CN', {timeZone:'Asia/Shanghai',year:'numeric',month:'numeric',day:'numeric'});
+const trialDateKey = seconds => seconds ? new Date((seconds + 8*3600) * 1000).toISOString().slice(0,10) : '';
+const reasonLabels = {banned:'确认封禁',low_views:'播放低',other:'其他原因'};
+function batchNumbers(data) {
+  const dates = [...new Set([...(data.accounts || []), ...(data.elimination_history || [])]
+    .map(x => trialDateKey(x.trial_started_at)).filter(Boolean))].sort();
+  return new Map(dates.map((date,index) => [date,index+1]));
+}
+function toast(message, failed = false) {
+  const el = $('#trialToast');
+  el.textContent = message;
+  el.classList.toggle('failed', failed);
+  el.hidden = false;
+}
 const trialDay = seconds => seconds ? Math.max(1, Math.floor((Date.now() / 1000 - seconds) / 86400) + 1) : null;
 function videoTone(views) {
   return views >= 1000 ? ['prism', '突破 1,000'] : views >= 600 ? ['gold', '达到 600'] :
@@ -33,6 +47,10 @@ function trialVideo(v) {
     (fresh ? '' : ' · 当前暂不可见或未更新')+'</div></div>';
 }
 function trialAccount(a) {
+  const prior = (currentTrial?.elimination_history || []).filter(h => h.account_no === a.account_no && h.account_id !== a.account_id);
+  const dateKey = trialDateKey(a.trial_started_at);
+  const batchNo = batchNumbers(currentTrial || {}).get(dateKey);
+  const batch = batchNo ? '<span class="trial-batch">第'+batchNo+'批</span><small class="trial-batch-date">'+esc(dateKey.slice(5))+'</small>' : '';
   const state = a.fail_streak ? '采集异常 '+a.fail_streak+' 次' : !a.active ? '已停采' : '采集中';
   const decision = a.decision === 'promoted' ? '已晋升' : a.decision === 'eliminated' ? '已淘汰' :
     a.candidate_reason ? '待淘汰' : a.fail_streak ? '采集异常' : '观察中';
@@ -45,30 +63,14 @@ function trialAccount(a) {
     (!a.decision && !extended ? '<button type="button" data-decision="extend" data-account-id="'+a.account_id+'">再观察 1 天</button>' : '')+
     (a.decision !== 'eliminated' ? '<button class="danger-quiet" type="button" data-decision="eliminated" data-account-id="'+a.account_id+'">选择淘汰原因…</button>' : '')+'</div>';
   const day = trialDay(a.trial_started_at);
-  return '<details class="trial-account '+a.grade+'"><summary><div class="trial-account-title"><span class="phone">#'+a.account_no+'</span><span class="trial-user">@'+esc(a.username)+'</span>'+(day ? '<span class="trial-day">第'+day+'天</span>' : '')+(tierName ? '<span class="tier-badge">'+tierName+'</span>' : '')+'<span class="trial-state">'+decision+'</span></div>'+
+  return '<details class="trial-account '+a.grade+'" data-account-id="'+a.account_id+'"><summary><div class="trial-account-title">'+batch+'<span class="phone">#'+a.account_no+'</span><span class="trial-user">@'+esc(a.username)+'</span>'+(day ? '<span class="trial-day">第'+day+'天</span>' : '')+(tierName ? '<span class="tier-badge">'+tierName+'</span>' : '')+'<span class="trial-state">'+decision+'</span></div>'+
     '<div class="trial-summary"><span>平均 <b>'+avg+'</b></span><span>≥200 <b>'+a.at_least_200+'/'+a.sample_count+'</b></span><span>≥600 <b>'+a.at_least_600+'</b></span><span>≥1,000 <b>'+a.at_least_1000+'</b></span></div></summary>'+
-    '<div class="trial-inside">'+(a.candidate_reason ? '<p class="trial-reason">'+esc(a.candidate_reason)+'；仅供判断，未自动淘汰。</p>' : '')+
+    '<div class="trial-inside"><div class="trial-prior"><b>本手机此前淘汰</b>'+(prior.length ? prior.map(h => '<span>@'+esc(h.username)+' · '+esc(reasonLabels[h.reason] || '其他原因')+(h._pending ? '（待保存）' : '')+'</span>').join('') : '<span>暂无</span>')+'</div>'+(a.candidate_reason ? '<p class="trial-reason">'+esc(a.candidate_reason)+'；仅供判断，未自动淘汰。</p>' : '')+
     '<div class="trial-meta">'+esc(state)+' · 本账号从 '+D(a.trial_started_at)+' 开始 · 最近成功 '+D(a.last_ok)+' · '+(a.trial_ends_at ? '观察到 '+D(a.trial_ends_at)+(extended ? '（已延长）' : '') : '已晋升，持续监测')+'</div>'+
     '<div class="trial-videos">'+(a.videos.length ? a.videos.map(trialVideo).join('') : '<div class="empty">尚未采到本次试跑的视频；这不是 0 播放。</div>')+'</div>'+actions+'</div></details>';
 }
-function trialCohorts(accounts) {
-  const cohorts = new Map();
-  accounts.forEach(a => {
-    const date = a.trial_started_at ? trialStartDate(a.trial_started_at) : '开始时间待确认';
-    if (!cohorts.has(date)) cohorts.set(date, []);
-    cohorts.get(date).push(a);
-  });
-  return [...cohorts.entries()].sort((a,b) => Math.max(...b[1].map(x=>x.trial_started_at || 0)) - Math.max(...a[1].map(x=>x.trial_started_at || 0)))
-    .map(([date, members]) => {
-      members.sort((a,b) => a.account_no - b.account_no);
-      const days = members.map(a=>trialDay(a.trial_started_at)).filter(Boolean);
-      const first = Math.min(...days), last = Math.max(...days);
-      const dayLabel = days.length ? '试跑第'+first+(last === first ? '' : '–'+last)+'天' : '开始时间待确认';
-      const candidates = members.filter(a=>a.group === 'candidate').length;
-      return '<details class="trial-cohort" open><summary><span class="cohort-date">'+esc(date)+' 开始</span><span class="cohort-day">'+dayLabel+'</span><span class="cohort-count">'+members.length+' 个账号'+(candidates ? ' · '+candidates+' 个待确认淘汰' : '')+'</span></summary><div class="cohort-accounts">'+members.map(trialAccount).join('')+'</div></details>';
-    }).join('');
-}
 function renderTrial(data) {
+  const opened = new Set([...document.querySelectorAll('#trialContent .trial-account[open]')].map(el => el.dataset.accountId));
   currentTrial = data;
   const accounts = data.accounts || [];
   const query = $('#trialSearch').value.trim().toLowerCase().replace(/^@/,'');
@@ -88,16 +90,18 @@ function renderTrial(data) {
     b.setAttribute('aria-selected', String(active));
   });
   if (trialTab === 'promoted') {
-    $('#trialContent').innerHTML = promoted.length ? promoted.slice(0,trialLimit).map(trialAccount).join('') :
+    $('#trialContent').innerHTML = promoted.length ? promoted.sort((a,b)=>a.account_no-b.account_no).slice(0,trialLimit).map(trialAccount).join('') :
       '<div class="empty">'+(query ? '没有匹配的入围号。' : '还没有手动晋升的账号。')+'</div>';
     $('#trialMore').hidden = promoted.length <= trialLimit;
+    opened.forEach(id => { const el = document.querySelector('#trialContent .trial-account[data-account-id="'+id+'"]'); if (el) el.open = true; });
     renderTrialHistory(data.elimination_history || [], query, phoneQuery);
     return;
   }
   const newAccounts = [...candidate, ...observing];
-  newAccounts.sort((a,b) => (b.trial_started_at || 0) - (a.trial_started_at || 0) || a.account_no - b.account_no);
-  $('#trialContent').innerHTML = newAccounts.length ? trialCohorts(newAccounts.slice(0,trialLimit)) :
+  newAccounts.sort((a,b) => a.account_no - b.account_no);
+  $('#trialContent').innerHTML = newAccounts.length ? newAccounts.slice(0,trialLimit).map(trialAccount).join('') :
     '<div class="empty">'+(query ? '没有匹配的新号。' : '目前没有试跑中的新号')+'</div>';
+  opened.forEach(id => { const el = document.querySelector('#trialContent .trial-account[data-account-id="'+id+'"]'); if (el) el.open = true; });
   $('#trialMore').hidden = newAccounts.length <= trialLimit;
   renderTrialHistory(data.elimination_history || [], query, phoneQuery);
 }
@@ -110,10 +114,9 @@ function renderTrialHistory(history, query, phoneQuery) {
     if (!phones.has(h.account_no)) phones.set(h.account_no, []);
     phones.get(h.account_no).push(h);
   });
-  const reason = {banned:'被封禁',low_views:'播放低',other:'其他'};
   $('#trialHistory').innerHTML = [...phones.entries()].sort((a,b)=>a[0]-b[0]).map(([phone,items]) =>
     '<details class="history-phone"><summary><span class="phone">#'+phone+'</span> '+items.length+' 次淘汰</summary>'+
-    items.map(h=>'<div class="history-row"><span>@'+esc(h.username)+'</span><span>已淘汰 · '+(reason[h.reason] || '其他')+'</span><time>'+D(h.decided_at)+'</time></div>').join('')+'</details>'
+    items.map(h=>'<div class="history-row"><span>@'+esc(h.username)+'</span><span>'+(h._pending ? '待保存' : '已淘汰')+' · '+esc(reasonLabels[h.reason] || '其他原因')+'</span><time>'+D(h.decided_at)+'</time></div>').join('')+'</details>'
   ).join('') || '<div class="empty">暂无淘汰记录</div>';
 }
 
@@ -143,25 +146,51 @@ eliminationDialog.addEventListener('close', () => { pendingEliminationId = null;
 async function decideTrial(accountId, decision, reason) {
   if (!isLocalManager) return;
   const a = currentTrial?.accounts.find(x => x.account_id === accountId);
-  if (!a) return;
+  if (!a || pendingDecisions.has(accountId)) return false;
   const msg = $('#trialMessage');
   if (decision === 'eliminated' && !reason) return false;
+  if (decision === 'eliminated') {
+    const history = {account_id:accountId,account_no:a.account_no,username:a.username,
+      reason,decided_at:Math.floor(Date.now()/1000),trial_started_at:a.trial_started_at,_pending:true};
+    pendingDecisions.set(accountId, {account:a,history});
+    currentTrial.accounts = currentTrial.accounts.filter(x => x.account_id !== accountId);
+    currentTrial.elimination_history = [history,...(currentTrial.elimination_history || [])];
+    eliminationDialog.close();
+    renderTrial(currentTrial);
+    toast('#'+a.account_no+' @'+a.username+' 已预览淘汰，后台保存中');
+  }
   msg.hidden = false; msg.textContent = '正在保存…';
   try {
     const response = await fetch('/api/trial/decision', {method:'POST',headers:{'Content-Type':'application/json'},
       body:JSON.stringify({account_id:accountId,decision,reason})});
     const result = await response.json();
     if (!response.ok || !result.ok) throw new Error(result.error || '保存失败');
-    msg.textContent = decision === 'promoted' ? '已晋升，公开看板正在同步。' :
-      decision === 'extend' ? '已延长至 72 小时，公开看板正在同步。' : '已淘汰并停采，公开看板正在同步。';
-    const next = await fetch('/data/trial.json',{cache:'no-store'});
-    if (next.ok) renderTrial(await next.json());
+    msg.textContent = decision === 'promoted' ? '已晋升，飞书和公开看板后台同步中。' :
+      decision === 'extend' ? '已延长至 72 小时，飞书和公开看板后台同步中。' : '已淘汰并停采，飞书和公开看板后台同步中。';
+    if (decision === 'eliminated') {
+      const pending = pendingDecisions.get(accountId);
+      if (pending) {
+        pendingDecisions.delete(accountId);
+        pending.history._pending = false;
+        pending.history.decided_at = result.decided_at || pending.history.decided_at;
+        renderTrial(currentTrial);
+      }
+      toast('#'+a.account_no+' @'+a.username+' 已保存，飞书和公开看板后台同步中');
+    } else {
+      load();
+    }
     return true;
   } catch (error) {
     msg.textContent = '未保存：'+error.message;
     if (decision === 'eliminated') {
-      $('#eliminateError').hidden = false;
-      $('#eliminateError').textContent = msg.textContent;
+      const pending = pendingDecisions.get(accountId);
+      if (pending) {
+        pendingDecisions.delete(accountId);
+        currentTrial.accounts.push(pending.account);
+        currentTrial.elimination_history = currentTrial.elimination_history.filter(h => h !== pending.history);
+        renderTrial(currentTrial);
+      }
+      toast('#'+a.account_no+' @'+a.username+' 保存失败，已恢复观察：'+error.message, true);
     }
     return false;
   }
@@ -173,13 +202,9 @@ $('#trialContent').addEventListener('click', event => {
   if (button.dataset.decision === 'eliminated') openElimination(id);
   else decideTrial(id, button.dataset.decision);
 });
-$('#confirmElimination').addEventListener('click', async () => {
+$('#confirmElimination').addEventListener('click', () => {
   if (!pendingEliminationId || !selectedEliminationReason) return;
-  const button = $('#confirmElimination');
-  button.disabled = true;
-  const saved = await decideTrial(pendingEliminationId, 'eliminated', selectedEliminationReason);
-  if (saved) eliminationDialog.close();
-  else button.disabled = false;
+  decideTrial(pendingEliminationId, 'eliminated', selectedEliminationReason);
 });
 document.querySelectorAll('[data-trial-tab]').forEach(button => button.addEventListener('click', () => {
   trialTab = button.dataset.trialTab;
@@ -288,6 +313,11 @@ async function load() {
     const trial = await fetch('data/trial.json',{cache:'no-store'});
     if (!trial.ok) throw new Error('看板数据暂不可用');
     const trialData = await trial.json();
+    if (pendingDecisions.size) {
+      trialData.accounts = (trialData.accounts || []).filter(a => !pendingDecisions.has(a.account_id));
+      trialData.elimination_history = [...[...pendingDecisions.values()].map(x => x.history),
+        ...(trialData.elimination_history || []).filter(h => !pendingDecisions.has(h.account_id))];
+    }
     renderTrial(trialData);
     const age = Math.max(0, Date.now()/1000 - trialData.generated_at);
     $('#status').textContent = '看板更新 '+D(trialData.generated_at)+

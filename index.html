@@ -1,12 +1,12 @@
 <!doctype html>
 <html lang="zh-CN">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>TK 新号观察</title><link rel="stylesheet" href="board.css?v=20261029a"></head>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>TK 新号观察</title><link rel="stylesheet" href="board.css?v=20261029b"></head>
 <body>
 <header><div><h1>TK 新号观察</h1><div class="status" id="status">正在读取数据…</div></div><button id="refresh">刷新</button></header>
 <main>
   <div id="error" class="notice warning" role="alert"></div>
   <section id="trial" aria-labelledby="trialTitle"><h2 id="trialTitle">新号试跑</h2>
-    <p class="muted">按新账号开始日期分区，区内按手机编号排列。换号后从第 1 天重新算；采集失败不算零播放。</p>
+    <p class="muted">按手机序号排列；每个账号前标记试跑批次和开始日期。展开可看本手机此前淘汰的账号与原因；采集失败不算零播放。</p>
     <div class="trial-tabs" role="tablist" aria-label="账号阶段">
       <button class="trial-tab active" type="button" role="tab" aria-selected="true" data-trial-tab="new">新号区 <span id="newCount"></span></button>
       <button class="trial-tab" type="button" role="tab" aria-selected="false" data-trial-tab="promoted">入围号 <span id="promotedCount"></span></button>
@@ -14,6 +14,7 @@
     <label class="trial-search-label" for="trialSearch">查找手机或账号</label>
     <input id="trialSearch" class="trial-search" type="search" placeholder="例如 8 或 @账号" autocomplete="off">
     <div id="trialMessage" class="notice" role="status" hidden></div>
+    <div id="trialToast" class="trial-toast" role="status" hidden></div>
     <div id="trialContent"></div>
     <button id="trialMore" class="trial-more" type="button" hidden>显示更多账号</button>
     <details class="trial-eliminated"><summary id="trialHistoryTitle">淘汰记录</summary><div id="trialHistory"></div></details>
@@ -29,5 +30,5 @@
     <p id="eliminateError" class="error" role="alert" hidden></p>
     <div class="eliminate-actions"><button type="button" id="cancelElimination">取消，继续观察</button><button type="button" id="confirmElimination" disabled>确认淘汰并停采</button></div>
   </dialog>
-</main><script src="public.js?v=20261029a"></script>
+</main><script src="public.js?v=20261029b"></script>
 </body></html>

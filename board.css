@@ -24,6 +24,8 @@
 .cohort-date{font-size:16px;color:#1d2940;font-weight:750}.cohort-day{border-radius:6px;padding:3px 7px;background:#fff;color:#254b92;font-size:12px;font-weight:700}.cohort-count{color:#526681;font-size:12px}
 .cohort-accounts{padding:8px 12px 12px}.cohort-accounts .trial-account:last-child{margin-bottom:0}
 .trial-day{font-size:11px;font-weight:700;color:#40577a;background:#ecf2fa;border:1px solid #cbd9ec;border-radius:6px;padding:2px 6px;white-space:nowrap}
+.trial-batch{font-size:11px;font-weight:750;color:#274b7b;background:#e7f0fb;border:1px solid #bcd1ee;border-radius:6px;padding:3px 7px;white-space:nowrap}
+.trial-batch-date{font-size:11px;color:#536785;white-space:nowrap;margin-right:3px}
 .trial-account{border:1px solid #dfe5ee;background:#fff;border-radius:14px;margin:8px 0;overflow:hidden}
 .trial-account>summary{padding:14px 16px;list-style:none;cursor:pointer;min-height:64px}
 .trial-account>summary::-webkit-details-marker{display:none}
@@ -40,6 +42,11 @@
 .trial-summary{display:flex;flex-wrap:wrap;gap:8px 18px;color:#5d6b7e;font-size:13px;margin-top:11px;font-variant-numeric:tabular-nums}
 .trial-summary b{color:#1d2940;font-size:16px}.trial-inside{padding:0 16px 15px;border-top:1px solid #e6eaf0;background:#fff}
 .trial-meta,.trial-reason{font-size:12px;color:#637087;margin:11px 0 5px}.trial-reason{color:#873e42;font-weight:650}
+.trial-prior{display:flex;align-items:baseline;flex-wrap:wrap;gap:5px 10px;padding:10px 0 8px;border-bottom:1px solid #edf0f5;font-size:12px;color:#526079}
+.trial-prior b{color:#273954}.trial-prior span{overflow-wrap:anywhere}
+.trial-toast{position:fixed;z-index:20;bottom:18px;right:18px;max-width:min(440px,calc(100vw - 24px));padding:13px 16px;border:1px solid #aac1e2;border-radius:10px;background:#eaf2ff;color:#183b68;box-shadow:0 9px 32px #1d29402c;font-size:13px;line-height:1.5}
+.trial-toast.failed{background:#fff0ef;border-color:#d99396;color:#923239}
+.trial-toast[hidden]{display:none}
 .trial-videos{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:11px 0}
 .trial-video{padding:11px 12px;border:1px solid #e5e9f0;border-radius:10px;background:#fff;min-width:0}
 .trial-video.low{background:#fbe4e5;border:2px solid #bf444c}.trial-video.gold{background:#dcecff;border:2px solid #6c9fdb}
