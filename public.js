@@ -19,13 +19,25 @@ let trialTab = 'new';
 let currentTrial = null;
 let trialLimit = 20;
 const pendingDecisions = new Map();
-const trialStartDate = seconds => new Date(seconds * 1000).toLocaleDateString('zh-CN', {timeZone:'Asia/Shanghai',year:'numeric',month:'numeric',day:'numeric'});
 const trialDateKey = seconds => seconds ? new Date((seconds + 8*3600) * 1000).toISOString().slice(0,10) : '';
 const reasonLabels = {banned:'确认封禁',low_views:'播放低',other:'其他原因'};
-function batchNumbers(data) {
-  const dates = [...new Set([...(data.accounts || []), ...(data.elimination_history || [])]
-    .map(x => trialDateKey(x.trial_started_at)).filter(Boolean))].sort();
-  return new Map(dates.map((date,index) => [date,index+1]));
+function fixedBatch(number) {
+  if (number <= 11) return {index:1,start:1,end:11};
+  const index = Math.floor((number - 12) / 10) + 2;
+  const start = 12 + (index - 2) * 10;
+  return {index,start,end:start + 9};
+}
+function batchRanges(count) {
+  const out = [];
+  for (let start = 1; start <= count;) {
+    const batch = fixedBatch(start);
+    out.push({...batch,end:Math.min(batch.end,count)});
+    start = batch.end + 1;
+  }
+  return out;
+}
+function resetCount(number) {
+  return (currentTrial?.elimination_history || []).filter(h => h.account_no === number).length;
 }
 function toast(message, failed = false) {
   const el = $('#trialToast');
@@ -48,12 +60,13 @@ function trialVideo(v) {
 }
 function trialAccount(a) {
   const prior = (currentTrial?.elimination_history || []).filter(h => h.account_no === a.account_no && h.account_id !== a.account_id);
-  const dateKey = trialDateKey(a.trial_started_at);
-  const batchNo = batchNumbers(currentTrial || {}).get(dateKey);
-  const batch = batchNo ? '<span class="trial-batch">第'+batchNo+'批</span><small class="trial-batch-date">'+esc(dateKey.slice(5))+'</small>' : '';
+  const resets = resetCount(a.account_no);
+  const resetBadge = resets ? '<span class="trial-reset">重置 '+resets+' 次</span>' : '';
   const state = a.fail_streak ? '采集异常 '+a.fail_streak+' 次' : !a.active ? '已停采' : '采集中';
   const decision = a.decision === 'promoted' ? '已晋升' : a.decision === 'eliminated' ? '已淘汰' :
     a.candidate_reason ? '待淘汰' : a.fail_streak ? '采集异常' : '观察中';
+  const decisionBadge = a.fail_streak ? '<span class="trial-state trial-state-error">采集异常</span>' :
+    '<span class="trial-state">'+decision+'</span>';
   const avg = a.average_views == null ? '—' : N(a.average_views);
   const tierName = a.grade === 'prism' ? '单条 ≥1,000' : a.grade === 'gold' ? '单条 ≥600' :
     a.grade === 'low' ? '平均 <200' : a.grade === 'missing' ? '待采样' : '';
@@ -63,14 +76,52 @@ function trialAccount(a) {
     (!a.decision && !extended ? '<button type="button" data-decision="extend" data-account-id="'+a.account_id+'">再观察 1 天</button>' : '')+
     (a.decision !== 'eliminated' ? '<button class="danger-quiet" type="button" data-decision="eliminated" data-account-id="'+a.account_id+'">选择淘汰原因…</button>' : '')+'</div>';
   const day = trialDay(a.trial_started_at);
-  return '<details class="trial-account '+a.grade+'" data-account-id="'+a.account_id+'"><summary><div class="trial-account-title">'+batch+'<span class="phone">#'+a.account_no+'</span><span class="trial-user">@'+esc(a.username)+'</span>'+(day ? '<span class="trial-day">第'+day+'天</span>' : '')+(tierName ? '<span class="tier-badge">'+tierName+'</span>' : '')+'<span class="trial-state">'+decision+'</span></div>'+
+  return '<details class="trial-account '+a.grade+'" data-account-id="'+a.account_id+'"><summary><div class="trial-account-title"><span class="phone">#'+a.account_no+'</span>'+resetBadge+'<span class="trial-user">@'+esc(a.username)+'</span>'+(day ? '<span class="trial-day">第'+day+'天</span>' : '')+(tierName ? '<span class="tier-badge">'+tierName+'</span>' : '')+decisionBadge+'</div>'+
     '<div class="trial-summary"><span>平均 <b>'+avg+'</b></span><span>≥200 <b>'+a.at_least_200+'/'+a.sample_count+'</b></span><span>≥600 <b>'+a.at_least_600+'</b></span><span>≥1,000 <b>'+a.at_least_1000+'</b></span></div></summary>'+
-    '<div class="trial-inside"><div class="trial-prior"><b>本手机此前淘汰</b>'+(prior.length ? prior.map(h => '<span>@'+esc(h.username)+' · '+esc(reasonLabels[h.reason] || '其他原因')+(h._pending ? '（待保存）' : '')+'</span>').join('') : '<span>暂无</span>')+'</div>'+(a.candidate_reason ? '<p class="trial-reason">'+esc(a.candidate_reason)+'；仅供判断，未自动淘汰。</p>' : '')+
+    '<div class="trial-inside"><div class="trial-prior"><b>本手机此前淘汰</b>'+(prior.length ? prior.map(h => '<span>@'+esc(h.username)+' · '+esc(reasonLabels[h.reason] || '其他原因')+(h._pending ? '（待保存）' : '')+'</span>').join('') : '<span>暂无</span>')+'</div>'+
+    (a.fail_streak ? '<p class="trial-failure"><b>采集异常原因：</b>'+esc(a.last_error_kind || '网页请求失败，具体原因待核实')+'；连续失败 '+a.fail_streak+' 次。最近成功 '+D(a.last_ok)+'。</p>' : '')+
+    (a.candidate_reason ? '<p class="trial-reason">'+esc(a.candidate_reason)+'；仅供判断，未自动淘汰。</p>' : '')+
     '<div class="trial-meta">'+esc(state)+' · 本账号从 '+D(a.trial_started_at)+' 开始 · 最近成功 '+D(a.last_ok)+' · '+(a.trial_ends_at ? '观察到 '+D(a.trial_ends_at)+(extended ? '（已延长）' : '') : '已晋升，持续监测')+'</div>'+
     '<div class="trial-videos">'+(a.videos.length ? a.videos.map(trialVideo).join('') : '<div class="empty">尚未采到本次试跑的视频；这不是 0 播放。</div>')+'</div>'+actions+'</div></details>';
 }
+function emptyTrialSlot(number) {
+  const resets = resetCount(number);
+  return '<div class="trial-empty-slot"><span class="phone">#'+number+'</span>'+
+    (resets ? '<span class="trial-reset">重置 '+resets+' 次</span>' : '')+
+    '<span class="trial-empty-label">暂无试跑账号</span></div>';
+}
+function batchSlotHtml(start, end, accounts, query, phoneQuery) {
+  const byNumber = new Map(accounts.map(a => [a.account_no,a]));
+  const html = [];
+  for (let number=start;number<=end;number++) {
+    const account = byNumber.get(number);
+    if (query && !(phoneQuery ? String(number) === phoneQuery : account?.username.toLowerCase().includes(query))) continue;
+    html.push(account ? trialAccount(account) : emptyTrialSlot(number));
+  }
+  return html.join('') || '<div class="empty">这一批没有匹配的账号。</div>';
+}
+function trialCohorts(accounts, promoted, query, phoneQuery, openedBatches) {
+  const slotCount = Number(currentTrial?.slot_count) || Math.max(21,...accounts.map(a=>a.account_no),...promoted.map(a=>a.account_no));
+  return batchRanges(slotCount).map(batch => {
+    const members = accounts.filter(a => a.account_no >= batch.start && a.account_no <= batch.end);
+    const promotedCount = promoted.filter(a => a.account_no >= batch.start && a.account_no <= batch.end).length;
+    const total = batch.end - batch.start + 1;
+    const matches = !query || (phoneQuery ? Number(phoneQuery) >= batch.start && Number(phoneQuery) <= batch.end : members.some(a => a.username.toLowerCase().includes(query)));
+    if (!matches) return '';
+    const allStarts = [...(currentTrial?.accounts || []),...(currentTrial?.elimination_history || [])]
+      .filter(x => x.account_no >= batch.start && x.account_no <= batch.end)
+      .map(x => x.trial_started_at).filter(Boolean);
+    const date = allStarts.length ? trialDateKey(Math.min(...allStarts)) : '';
+    const opened = openedBatches.has(batch.index) || !!query;
+    const summary = query ? (phoneQuery ? '查看 #'+phoneQuery : members.filter(a => a.username.toLowerCase().includes(query)).length+' 个匹配') :
+      members.length+' 个试跑中'+(promotedCount ? ' · '+promotedCount+' 个已入围' : '')+' · '+(total-members.length-promotedCount)+' 个空位';
+    return '<details class="trial-cohort" data-batch-no="'+batch.index+'" data-start="'+batch.start+'" data-end="'+batch.end+'"'+(opened ? ' open' : '')+'><summary><strong class="cohort-title">第'+batch.index+'批</strong><span class="cohort-range">#'+batch.start+'–#'+batch.end+'</span><span class="cohort-count">'+summary+'</span>'+(date ? '<small class="cohort-date">起始 '+esc(date)+'</small>' : '')+'</summary><div class="cohort-accounts">'+
+      (opened ? batchSlotHtml(batch.start,batch.end,accounts,query,phoneQuery) : '')+'</div></details>';
+  }).join('') || '<div class="empty">'+(query ? '没有匹配的新号。' : '目前没有试跑中的新号')+'</div>';
+}
 function renderTrial(data) {
   const opened = new Set([...document.querySelectorAll('#trialContent .trial-account[open]')].map(el => el.dataset.accountId));
+  const openedBatches = new Set([...document.querySelectorAll('#trialContent .trial-cohort[open]')].map(el => Number(el.dataset.batchNo)));
   currentTrial = data;
   const accounts = data.accounts || [];
   const query = $('#trialSearch').value.trim().toLowerCase().replace(/^@/,'');
@@ -99,10 +150,9 @@ function renderTrial(data) {
   }
   const newAccounts = [...candidate, ...observing];
   newAccounts.sort((a,b) => a.account_no - b.account_no);
-  $('#trialContent').innerHTML = newAccounts.length ? newAccounts.slice(0,trialLimit).map(trialAccount).join('') :
-    '<div class="empty">'+(query ? '没有匹配的新号。' : '目前没有试跑中的新号')+'</div>';
+  $('#trialContent').innerHTML = trialCohorts(newAccounts,promotedAll,query,phoneQuery,openedBatches);
   opened.forEach(id => { const el = document.querySelector('#trialContent .trial-account[data-account-id="'+id+'"]'); if (el) el.open = true; });
-  $('#trialMore').hidden = newAccounts.length <= trialLimit;
+  $('#trialMore').hidden = true;
   renderTrialHistory(data.elimination_history || [], query, phoneQuery);
 }
 
@@ -202,6 +252,16 @@ $('#trialContent').addEventListener('click', event => {
   if (button.dataset.decision === 'eliminated') openElimination(id);
   else decideTrial(id, button.dataset.decision);
 });
+$('#trialContent').addEventListener('toggle', event => {
+  const cohort = event.target;
+  if (!cohort.matches?.('.trial-cohort') || !cohort.open) return;
+  const content = cohort.querySelector('.cohort-accounts');
+  if (content?.children.length) return;
+  const accounts = (currentTrial?.accounts || []).filter(a => a.group !== 'promoted');
+  const query = $('#trialSearch').value.trim().toLowerCase().replace(/^@/,'');
+  const phoneQuery = /^#?\d+$/.test(query) ? query.replace(/^#/,'') : null;
+  content.innerHTML = batchSlotHtml(Number(cohort.dataset.start),Number(cohort.dataset.end),accounts,query,phoneQuery);
+}, true);
 $('#confirmElimination').addEventListener('click', () => {
   if (!pendingEliminationId || !selectedEliminationReason) return;
   decideTrial(pendingEliminationId, 'eliminated', selectedEliminationReason);
