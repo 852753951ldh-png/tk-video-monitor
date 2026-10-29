@@ -101,7 +101,8 @@ function batchSlotHtml(start, end, accounts, query, phoneQuery) {
   return html.join('') || '<div class="empty">这一批没有匹配的账号。</div>';
 }
 function trialCohorts(accounts, promoted, query, phoneQuery, openedBatches) {
-  const slotCount = Number(currentTrial?.slot_count) || Math.max(21,...accounts.map(a=>a.account_no),...promoted.map(a=>a.account_no));
+  const slotCount = Math.max(50, Number(currentTrial?.slot_count) || 0,
+    ...accounts.map(a=>a.account_no), ...promoted.map(a=>a.account_no));
   return batchRanges(slotCount).map(batch => {
     const members = accounts.filter(a => a.account_no >= batch.start && a.account_no <= batch.end);
     const promotedCount = promoted.filter(a => a.account_no >= batch.start && a.account_no <= batch.end).length;
