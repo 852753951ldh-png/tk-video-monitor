@@ -2,7 +2,7 @@
 (() => {
   const local = ['127.0.0.1', 'localhost'].includes(location.hostname);
   const privateGateway = document.documentElement.dataset.privateGateway === '1';
-  const labels = ['香港 A9', '日本 A9', '香港 A10', '日本 A10', '美国 A1'];
+  const labels = ['香港A9', '日本A9', '香港A10', '日本A10', '美国A1'];
   const container = document.querySelector('#trialContent');
   const cache = new Map();
   let active = null;
@@ -38,10 +38,11 @@
       button.type = 'button';
       button.className = 'node-peek-trigger';
       button.dataset.nodePhone = String(number);
-      button.setAttribute('aria-label', `查看 ${number} 号手机住宅节点与二维码`);
+      const label = labels[groupFor(number)-1];
+      button.setAttribute('aria-label', `查看 ${number} 号手机${label}住宅节点与二维码`);
       button.setAttribute('aria-haspopup', 'dialog');
       button.setAttribute('aria-expanded', 'false');
-      button.innerHTML = svg;
+      button.innerHTML = svg+'<span>'+label+'</span>';
       if (row.classList.contains('trial-empty-slot')) {
         row.insertBefore(button, row.querySelector('.trial-empty-label'));
       } else {
@@ -100,7 +101,7 @@
       .forEach(button => button.setAttribute('aria-expanded', 'false'));
     trigger.setAttribute('aria-expanded', 'true');
     title.textContent = `#${phone} 住宅节点`;
-    group.textContent = labels[groupFor(phone)-1];
+    group.textContent = labels[groupFor(phone)-1]+' · 连接二维码';
     value.textContent = '正在读取…';
     feedback.textContent = '';
     qr.hidden = true;
@@ -111,6 +112,7 @@
     try {
       const item = await getNode(phone);
       if (active !== phone || panel.hidden) return;
+      group.textContent = (item.qr_name || labels[groupFor(phone)-1])+' · 连接二维码';
       value.textContent = item.node || '该序号暂未配置节点';
       if (item.qr_data?.startsWith('data:image/png;base64,') || /^data\/qr\/[1-5]\.png$/.test(item.qr_url || '')) {
         qr.src = item.qr_data || item.qr_url;
