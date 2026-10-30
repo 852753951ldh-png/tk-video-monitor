@@ -100,7 +100,7 @@ function trialAccount(a) {
     '<div class="trial-inside"><div class="trial-prior"><b>本手机此前淘汰</b>'+(prior.length ? prior.map(h => '<span>@'+esc(h.username)+' · '+esc(reasonLabels[h.reason] || '其他原因')+(h._pending ? '（待保存）' : '')+'</span>').join('') : '<span>暂无</span>')+'</div>'+
     (a.fail_streak ? '<p class="trial-failure"><b>采集异常原因：</b>'+esc(a.last_error_kind || '网页请求失败，具体原因待核实')+'；连续失败 '+a.fail_streak+' 次。最近成功 '+D(a.last_ok)+'。</p>' : '')+
     (a.candidate_reason ? '<p class="trial-reason">'+esc(a.candidate_reason)+'；仅供判断，未自动淘汰。</p>' : '')+
-    '<div class="trial-meta">'+esc(state)+' · 本账号从 '+D(a.trial_started_at)+' 开始 · 最近成功 '+D(a.last_ok)+' · '+(a.trial_ends_at ? '观察到 '+D(a.trial_ends_at)+(extended ? '（已延长）' : '') : '已晋升，持续监测')+'</div>'+
+    '<div class="trial-meta">'+esc(state)+' · 本账号从 '+D(a.trial_started_at)+' 开始 · 最近成功 '+D(a.last_ok)+' · '+(a.trial_ends_at ? '评估节点 '+D(a.trial_ends_at)+(extended ? '（已延长）' : '')+'；未淘汰继续采集' : '持续采集至手动淘汰')+'</div>'+ 
     '<div class="trial-videos">'+(a.videos.length ? a.videos.map(trialVideo).join('') : '<div class="empty">尚未采到本次试跑的视频；这不是 0 播放。</div>')+'</div>'+actions+'</div></details>';
 }
 function emptyTrialSlot(number) {
@@ -301,11 +301,11 @@ function renderAccounts(data, board) {
   const reached = accounts.reduce((n, a) => n + (byId.get(a.account_id)?.videos.length || 0), 0);
   const sampled = accounts.filter(a => a.last_ok && a.last_ok >= a.trial_started_at).length;
   const active = accounts.filter(a => a.active).length;
-  $('#trialNote').textContent = end ? '本批观察到 '+D(end)+'（北京时间）；到期自动停采，历史结果继续保留。' : '按手机编号查看采集和单条播放。';
+  $('#trialNote').textContent = end ? '本批评估节点 '+D(end)+'（北京时间）；未手动淘汰的账号继续采集。' : '按手机编号查看采集和单条播放。';
   $('#batchMetrics').innerHTML = card('本批账号', N(accounts.length), '按手机编号排序') +
     card('已采到数据', N(sampled)+' / '+N(accounts.length), '首次成功采集过的账号') +
     card('单条 ≥1,000', N(reached), '按 PID 去重') +
-    card('仍在采集', N(active), '到期自动停采');
+    card('仍在采集', N(active), '未淘汰持续更新');
   $('#accounts').innerHTML = accounts.map(a => {
     const detail = byId.get(a.account_id);
     const hits = detail?.videos.length || 0;
