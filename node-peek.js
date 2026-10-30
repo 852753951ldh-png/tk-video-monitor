@@ -6,6 +6,7 @@
   const container = document.querySelector('#trialContent');
   const cache = new Map();
   let active = null;
+  let activeTrigger = null;
   let hideTimer = null;
 
   const panel = document.createElement('aside');
@@ -60,8 +61,9 @@
     document.querySelectorAll('.node-peek-trigger[aria-expanded="true"]')
       .forEach(button => button.setAttribute('aria-expanded', 'false'));
     active = null;
+    activeTrigger = null;
   }
-  function laterHide() { clearHide(); hideTimer = setTimeout(hide, 180); }
+  function laterHide() { clearHide(); hideTimer = setTimeout(hide, 300); }
   function position(trigger) {
     const rect = trigger.getBoundingClientRect();
     const width = Math.min(420, window.innerWidth - 16);
@@ -97,6 +99,7 @@
     const phone = Number(trigger.dataset.nodePhone);
     if (!phone) return;
     active = phone;
+    activeTrigger = trigger;
     document.querySelectorAll('.node-peek-trigger[aria-expanded="true"]')
       .forEach(button => button.setAttribute('aria-expanded', 'false'));
     trigger.setAttribute('aria-expanded', 'true');
@@ -150,7 +153,12 @@
   panel.addEventListener('focusout', event => {
     if (!panel.contains(event.relatedTarget)) laterHide();
   });
-  window.addEventListener('scroll', hide, {passive:true});
+  window.addEventListener('scroll', () => {
+    if (!activeTrigger || panel.hidden) return;
+    const rect = activeTrigger.getBoundingClientRect();
+    if (rect.bottom < 0 || rect.top > window.innerHeight) hide();
+    else position(activeTrigger);
+  }, {passive:true});
   window.addEventListener('keydown', event => { if (event.key === 'Escape') hide(); });
   panel.querySelector('#nodePeekCopy').addEventListener('click', async () => {
     const text = value.textContent;
