@@ -1,10 +1,18 @@
 <!doctype html>
 <html lang="zh-CN">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>TK 新号观察</title><link rel="stylesheet" href="board.css?v=20261030a"></head>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>TK 新号观察</title><link rel="stylesheet" href="board.css?v=20261030b"></head>
 <body>
 <header><div><h1>TK 新号观察</h1><div class="status" id="status">正在读取数据…</div></div><button id="refresh">刷新</button></header>
 <main>
   <div id="error" class="notice warning" role="alert"></div>
+  <details class="qr-library">
+    <summary><strong>连接二维码</strong><span>香港W02 · 日本W07 · 日本W07</span></summary>
+    <div class="qr-gallery">
+      <figure><img src="data/qr/6.svg" alt="香港W02连接二维码" width="420" height="420" loading="lazy"><figcaption><b>01 香港W02</b></figcaption><a href="data/qr/6.svg" target="_blank" rel="noopener">打开大图</a></figure>
+      <figure><img src="data/qr/7.svg" alt="日本W07第一张连接二维码" width="420" height="420" loading="lazy"><figcaption><b>02 日本W07</b><small>第 1 张</small></figcaption><a href="data/qr/7.svg" target="_blank" rel="noopener">打开大图</a></figure>
+      <figure><img src="data/qr/8.svg" alt="日本W07第二张连接二维码" width="420" height="420" loading="lazy"><figcaption><b>03 日本W07</b><small>第 2 张</small></figcaption><a href="data/qr/8.svg" target="_blank" rel="noopener">打开大图</a></figure>
+    </div>
+  </details>
   <section id="trial" aria-labelledby="trialTitle"><h2 id="trialTitle">新号试跑</h2>
     <p class="muted">按批次展开，再按手机序号查看；空序号保留。采集失败不算零播放，也不代表封号。</p>
     <div class="trial-tabs" role="tablist" aria-label="账号阶段">
@@ -30,5 +38,5 @@
     <p id="eliminateError" class="error" role="alert" hidden></p>
     <div class="eliminate-actions"><button type="button" id="cancelElimination">取消，继续观察</button><button type="button" id="confirmElimination" disabled>确认淘汰并停采</button></div>
   </dialog>
-</main><script src="public.js?v=20261029f"></script><script src="node-peek.js?v=20261030a"></script>
+</main><script src="public.js?v=20261029f"></script><script src="node-peek.js?v=20261030b"></script>
 </body></html>

@@ -88,3 +88,17 @@ button:focus-visible,summary:focus-visible,a:focus-visible{outline:3px solid #46
 .node-peek-feedback{min-height:16px;margin:5px 0;color:#245a3f;font-size:12px}.node-peek-panel img{display:block;width:min(100%,340px);height:auto;max-height:340px;object-fit:contain;margin:0 auto;image-rendering:auto}.node-peek-panel img[hidden]{display:none}
 .node-unlock-button{margin-left:auto}.node-unlock-dialog{width:min(430px,calc(100% - 24px));border:1px solid #ccd7e7;border-radius:15px;padding:22px}.node-unlock-dialog::backdrop{background:#16243c99}.node-unlock-dialog h2{margin:0 0 12px}.node-unlock-dialog p{font-size:13px;color:#5b6b80}.node-unlock-dialog label{display:block;font-weight:700;margin:14px 0 6px}.node-unlock-dialog input{width:100%;min-height:44px}.node-unlock-dialog #nodeUnlockError{color:#b32635;min-height:18px}
 @media(max-width:750px){.node-peek-panel{padding:12px}.node-peek-panel img{max-height:min(46dvh,340px)}.node-peek-copyline{flex-direction:column}.node-peek-copyline button{min-height:42px}header .node-unlock-button{margin-left:0}}
+.qr-library{margin:0 0 18px;border:1px solid #dbe3ef;border-radius:12px;background:#fff;overflow:hidden}
+.qr-library>summary{display:flex;align-items:center;flex-wrap:wrap;gap:6px 14px;min-height:48px;padding:10px 16px;list-style:none;touch-action:manipulation}
+.qr-library>summary::-webkit-details-marker{display:none}
+.qr-library>summary strong{font-size:15px;color:#1d2940}
+.qr-library>summary span{font-size:12px;color:#536681;font-weight:500}
+.qr-library>summary::after{content:'展开';margin-left:auto;font-size:12px;color:#40577a}
+.qr-library[open]>summary::after{content:'收起'}
+.qr-gallery{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;padding:4px 16px 18px;border-top:1px solid #edf1f6}
+.qr-gallery figure{min-width:0;margin:12px 0 0;padding:12px;border:1px solid #e2e8f1;border-radius:10px;text-align:center;background:#fff}
+.qr-gallery img{display:block;width:min(100%,420px);height:auto;aspect-ratio:1;margin:0 auto;background:#fff}
+.qr-gallery figcaption{display:flex;align-items:center;justify-content:center;gap:8px;margin:10px 0 7px;color:#22324e}
+.qr-gallery figcaption small{font-size:11px}
+.qr-gallery a{display:inline-block;padding:6px 8px;font-size:12px}
+@media(max-width:750px){.qr-library>summary{padding:10px 12px}.qr-library>summary span{order:3;width:100%}.qr-gallery{grid-template-columns:1fr;padding:4px 12px 14px}.qr-gallery figure{margin-top:8px}.qr-gallery img{width:min(100%,360px)}}

@@ -114,7 +114,7 @@
       if (active !== phone || panel.hidden) return;
       group.textContent = (item.qr_name || labels[groupFor(phone)-1])+' · 连接二维码';
       value.textContent = item.node || '该序号暂未配置节点';
-      if (item.qr_data?.startsWith('data:image/png;base64,') || /^data\/qr\/[1-5]\.png$/.test(item.qr_url || '')) {
+      if (item.qr_data?.startsWith('data:image/png;base64,') || /^data\/qr\/[1-5]\.svg$/.test(item.qr_url || '')) {
         qr.src = item.qr_data || item.qr_url;
         qr.alt = `${labels[item.qr_group-1]} 连接二维码`;
         qr.hidden = false;
