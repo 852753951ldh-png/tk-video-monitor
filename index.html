@@ -1,10 +1,14 @@
 <!doctype html>
 <html lang="zh-CN">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>TK 新号观察</title><link rel="stylesheet" href="board.css?v=20261030c"></head>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>TK 新号观察</title><link rel="stylesheet" href="board.css?v=20261030g"></head>
 <body>
 <header><div><h1>TK 新号观察</h1><div class="status" id="status">正在读取数据…</div></div><button id="refresh">刷新</button></header>
 <main>
   <div id="error" class="notice warning" role="alert"></div>
+  <section id="focusSix" class="focus-six" aria-labelledby="focusSixTitle" hidden>
+    <div class="focus-six-head"><div><h2 id="focusSixTitle">#6 投流观察</h2><p id="focusSixStatus" class="muted"></p></div><div class="focus-six-followers"><small>粉丝量</small><strong id="focusSixFollowers">—</strong><small id="focusSixFollowersAt"></small></div></div>
+    <div id="focusSixVideos" class="focus-six-videos"></div>
+  </section>
   <details class="qr-library">
     <summary><strong>连接二维码（8 张）</strong><span>先看原有 5 张，再看新增 3 张</span></summary>
     <div class="qr-gallery">
@@ -43,5 +47,5 @@
     <p id="eliminateError" class="error" role="alert" hidden></p>
     <div class="eliminate-actions"><button type="button" id="cancelElimination">取消，继续观察</button><button type="button" id="confirmElimination" disabled>确认淘汰并停采</button></div>
   </dialog>
-</main><script src="public.js?v=20261029f"></script><script src="node-peek.js?v=20261030d"></script>
+</main><script src="public.js?v=20261030g"></script><script src="node-peek.js?v=20261030d"></script>
 </body></html>

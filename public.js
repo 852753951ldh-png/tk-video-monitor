@@ -21,6 +21,25 @@ let trialLimit = 20;
 const pendingDecisions = new Map();
 const trialDateKey = seconds => seconds ? new Date((seconds + 8*3600) * 1000).toISOString().slice(0,10) : '';
 const reasonLabels = {banned:'确认封禁',low_views:'播放低',other:'其他原因'};
+function renderFocusSix(focus) {
+  const section = $('#focusSix');
+  section.hidden = !focus;
+  if (!focus) return;
+  $('#focusSixTitle').textContent = '#6 投流观察 · @' + focus.username;
+  $('#focusSixFollowers').textContent = N(focus.followers);
+  $('#focusSixFollowersAt').textContent = focus.followers_sampled_at ? '采样 ' + D(focus.followers_sampled_at) : '待采样';
+  $('#focusSixStatus').textContent = focus.fail_streak ?
+    '采集异常：' + focus.last_error_kind : !focus.active ? '当前已停采' :
+    '最近采集 ' + D(focus.last_ok) + ' · 最近 5 条视频';
+  $('#focusSixVideos').innerHTML = focus.videos.length ? focus.videos.map((video, index) =>
+    '<article class="focus-six-video"><div class="focus-six-video-head"><span>最近第 '+(index+1)+' 条</span><strong>'+
+    (video.views == null ? '待采样' : N(video.views))+'</strong></div>'+
+    '<a href="'+esc(video.url)+'" target="_blank" rel="noopener" class="pid">PID '+esc(video.pid)+'</a>'+
+    '<small>发布 '+D(video.published_at)+' · 播放采样 '+D(video.sampled_at)+
+    (video.change_since_previous == null ? '' : ' · 较前次 '+
+      (video.change_since_previous >= 0 ? '+' : '')+N(video.change_since_previous))+
+    '</small></article>').join('') : '<p class="focus-six-empty">暂未采到 #6 的视频；采集成功后在这里显示最近 5 条。</p>';
+}
 function fixedBatch(number) {
   if (number <= 11) return {index:1,start:1,end:11};
   const index = Math.floor((number - 12) / 10) + 2;
@@ -379,6 +398,7 @@ async function load() {
       trialData.elimination_history = [...[...pendingDecisions.values()].map(x => x.history),
         ...(trialData.elimination_history || []).filter(h => !pendingDecisions.has(h.account_id))];
     }
+    renderFocusSix(trialData.focus_six);
     renderTrial(trialData);
     const age = Math.max(0, Date.now()/1000 - trialData.generated_at);
     $('#status').textContent = '看板更新 '+D(trialData.generated_at)+
